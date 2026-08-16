@@ -1,84 +1,473 @@
-import { useParams, Link } from "react-router-dom";
+import {useEffect, useState} from "react";
+import {Link, useParams} from "react-router-dom";
 import Layout from "@/components/Layout";
-import { ArrowLeft } from "lucide-react";
-import fotoRescate from "@/assets/foto-rescate-vehicular.jpg";
-import fotoComunidad from "@/assets/foto-comunidad.jpg";
-import fotoEquipo from "@/assets/foto-equipo-rescate.jpg";
-import fotoFormacion from "@/assets/foto-formacion.jpg";
+import {
+  ArrowLeft,
+  Copy,
+  Check,
+} from "lucide-react";
+import {sanityClient, urlFor} from "../lib/sanity";
 
-const postsData: Record<string, { title: string; date: string; category: string; image: string; content: string }> = {
-  "1": {
-    title: "Entrenamiento de Rescate Vehicular 2025",
-    date: "15 de Marzo, 2025",
-    category: "Entrenamiento",
-    image: fotoRescate,
-    content: `Nuestros voluntarios completaron con éxito la última jornada de capacitación en rescate vehicular con herramientas Holmatro de última generación.\n\nDurante tres días intensivos de formación, los bomberos perfeccionaron técnicas de corte, separación y estabilización vehicular, bajo la dirección de instructores certificados.\n\nLa capacitación incluyó escenarios simulados de volcamientos, colisiones laterales y atrapamientos múltiples, preparando al equipo para enfrentar cualquier tipo de emergencia vehicular.\n\nEste tipo de entrenamientos son fundamentales para mantener los estándares de excelencia que caracterizan a nuestra compañía y para asegurar la mejor respuesta posible ante cada emergencia.`,
-  },
-  "2": {
-    title: "Jornada Comunitaria en Lagunillas",
-    date: "28 de Febrero, 2025",
-    category: "Comunidad",
-    image: fotoComunidad,
-    content: `La compañía participó en una actividad comunitaria con los vecinos del sector Lagunillas, acercando la labor bomberil a los más pequeños.\n\nLos niños y niñas del sector pudieron conocer de cerca los vehículos de emergencia, probarse equipos de protección y aprender sobre prevención de incendios.\n\nEsta actividad refuerza el compromiso de la Quinta Compañía con su comunidad, promoviendo la educación en seguridad y prevención desde temprana edad.`,
-  },
-  "3": {
-    title: "Nuevo Equipamiento para la Compañía",
-    date: "10 de Febrero, 2025",
-    category: "Equipamiento",
-    image: fotoEquipo,
-    content: `Gracias al apoyo de nuestros socios, la compañía recibió nuevo equipamiento de protección personal para sus voluntarios.\n\nEl nuevo equipamiento incluye trajes estructurales, cascos, botas y guantes que cumplen con las normas internacionales de seguridad más exigentes.\n\nEsta inversión en seguridad es posible gracias a las contribuciones mensuales de nuestros socios colaboradores y al esfuerzo de autogestión de la compañía.`,
-  },
-  "4": {
-    title: "Ceremonia de Aniversario 74°",
-    date: "20 de Febrero, 2025",
-    category: "Institucional",
-    image: fotoFormacion,
-    content: `La Quinta Compañía celebró su 74° aniversario con una emotiva ceremonia en el cuartel de Lagunillas 2.\n\nLa ceremonia contó con la participación de autoridades locales, representantes del Cuerpo de Bomberos de Coronel y la comunidad.\n\nSe realizó un reconocimiento a los voluntarios más antiguos y se renovó el compromiso de servicio que desde 1951 guía a nuestra institución bajo el lema "Honor y Sacrificio".`,
-  },
+interface PortableTextSpan {
+  _key?: string;
+  _type?: string;
+  text?: string;
+  marks?: string[];
+}
+
+interface PortableTextBlock {
+  _key?: string;
+  _type?: string;
+  style?: string;
+  listItem?: string;
+  children?: PortableTextSpan[];
+  asset?: any;
+  pie?: string;
+}
+
+interface Noticia {
+  _id: string;
+  titulo?: string;
+  fecha?: string;
+  categoria?: string;
+  imagenPrincipal?: any;
+  contenido?: PortableTextBlock[];
+}
+
+const formatearFecha = (fecha?: string) => {
+  if (!fecha) return "";
+
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${fecha}T00:00:00Z`));
 };
 
 const NoticiaDetalle = () => {
-  const { id } = useParams<{ id: string }>();
-  const post = postsData[id || ""];
+  const {slug} = useParams<{slug: string}>();
 
-  if (!post) {
+  const [post, setPost] = useState<Noticia | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [copiado, setCopiado] = useState(false);
+
+  // =====================================================
+  // CARGAR NOTICIA DESDE SANITY
+  // =====================================================
+
+  useEffect(() => {
+    if (!slug) {
+      setCargando(false);
+      return;
+    }
+
+    sanityClient
+      .fetch<Noticia | null>(
+        `
+        *[
+          _type == "noticia" &&
+          slug.current == $slug
+        ][0]{
+          _id,
+          titulo,
+          fecha,
+          categoria,
+          imagenPrincipal,
+          contenido
+        }
+        `,
+        {slug}
+      )
+      .then((data) => {
+        console.log("Noticia desde Sanity:", data);
+        setPost(data);
+        setCargando(false);
+      })
+      .catch((error) => {
+        console.error(
+          "Error cargando noticia desde Sanity:",
+          error
+        );
+
+        setCargando(false);
+      });
+  }, [slug]);
+
+  // =====================================================
+  // COMPARTIR
+  // =====================================================
+
+  const compartirFacebook = () => {
+    const url = encodeURIComponent(window.location.href);
+
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  const compartirWhatsApp = () => {
+    const url = encodeURIComponent(window.location.href);
+    const titulo = encodeURIComponent(post?.titulo || "Noticia");
+
+    window.open(
+      `https://wa.me/?text=${titulo}%20${url}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  const compartirX = () => {
+    const url = encodeURIComponent(window.location.href);
+    const titulo = encodeURIComponent(post?.titulo || "Noticia");
+
+    window.open(
+      `https://twitter.com/intent/tweet?text=${titulo}&url=${url}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  const copiarEnlace = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+
+      setCopiado(true);
+
+      setTimeout(() => {
+        setCopiado(false);
+      }, 2000);
+    } catch (error) {
+      console.error(
+        "No se pudo copiar el enlace:",
+        error
+      );
+    }
+  };
+
+  // =====================================================
+  // CARGANDO
+  // =====================================================
+
+  if (cargando) {
     return (
       <Layout>
-        <div className="pt-32 pb-20 container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-black uppercase text-foreground mb-4">Noticia no encontrada</h1>
-          <Link to="/noticias" className="text-primary font-bold hover:underline">Volver a Noticias</Link>
-        </div>
+        <section className="py-32 bg-white">
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-[#6B7280]">
+              Cargando noticia...
+            </p>
+          </div>
+        </section>
       </Layout>
     );
   }
 
+  // =====================================================
+  // NO ENCONTRADA
+  // =====================================================
+
+  if (!post) {
+    return (
+      <Layout>
+        <section className="py-32 bg-white">
+
+          <div className="container mx-auto px-4 text-center">
+
+            <h1 className="text-3xl font-black uppercase text-[#1F2937] mb-4">
+              Noticia no encontrada
+            </h1>
+
+            <Link
+              to="/noticias"
+              className="text-[#00549A] font-bold hover:underline"
+            >
+              Volver a Noticias
+            </Link>
+
+          </div>
+
+        </section>
+      </Layout>
+    );
+  }
+
+  const imagenPrincipal = post.imagenPrincipal
+    ? urlFor(post.imagenPrincipal)
+        .width(1600)
+        .url()
+    : null;
+
   return (
     <Layout>
-      <section className="relative h-[50vh] min-h-[400px] flex items-end bg-navy overflow-hidden">
-        <img src={post.image} alt={post.title} className="absolute inset-0 w-full h-full object-cover opacity-40" />
-        <div className="hero-overlay absolute inset-0" />
-        <div className="container mx-auto px-4 pb-16 relative z-10">
-          <Link to="/noticias" className="inline-flex items-center gap-2 text-primary-foreground/70 hover:text-gold text-sm font-semibold uppercase tracking-wider mb-4">
-            <ArrowLeft className="h-4 w-4" /> Volver a Noticias
-          </Link>
-          <span className="block text-xs font-bold uppercase tracking-wider text-gold mb-2">{post.category} — {post.date}</span>
-          <h1 className="text-3xl md:text-5xl font-black uppercase text-primary-foreground leading-tight max-w-3xl">
-            {post.title}
-          </h1>
+
+      {/* =====================================================
+          CABECERA AZUL
+      ===================================================== */}
+
+      <section className="bg-[#00549A] pt-28 pb-8">
+
+        <div className="container mx-auto px-4">
+
+          <div className="max-w-4xl mx-auto">
+
+            <Link
+              to="/noticias"
+              className="inline-flex items-center gap-2 text-white/80 hover:text-white text-sm font-semibold uppercase tracking-wider"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+              Volver a Noticias
+
+            </Link>
+
+          </div>
+
         </div>
+
       </section>
 
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            {post.content.split("\n\n").map((paragraph, i) => (
-              <p key={i} className="text-foreground/80 leading-relaxed mb-6 text-lg">
-                {paragraph}
+      {/* =====================================================
+          ARTÍCULO
+      ===================================================== */}
+
+      <main className="bg-white py-12 md:py-16">
+
+        <article className="container mx-auto px-4">
+
+          <div className="max-w-4xl mx-auto">
+
+            {/* CATEGORÍA Y FECHA */}
+
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+
+              {post.categoria && (
+                <span className="text-xs font-bold uppercase tracking-wider text-[#00549A]">
+                  {post.categoria}
+                </span>
+              )}
+
+              {post.fecha && (
+                <span className="text-sm text-[#6B7280]">
+                  {formatearFecha(post.fecha)}
+                </span>
+              )}
+
+            </div>
+
+            {/* =====================================================
+                IMAGEN PRINCIPAL
+            ===================================================== */}
+
+            {imagenPrincipal && (
+
+              <figure className="mb-8">
+
+                <div className="w-full rounded-lg overflow-hidden bg-[#F3F4F6]">
+
+                  <img
+                    src={imagenPrincipal}
+                    alt={post.titulo || "Noticia"}
+                    className="w-full max-h-[520px] object-contain"
+                  />
+
+                </div>
+
+              </figure>
+
+            )}
+
+            {/* =====================================================
+                TÍTULO
+            ===================================================== */}
+
+            <header className="max-w-3xl mb-10">
+
+              <div className="w-14 h-1 bg-[#D4A72C] mb-5" />
+
+              <h1 className="text-3xl md:text-5xl font-black uppercase text-[#1F2937] leading-[1.1]">
+                {post.titulo || "Noticia"}
+              </h1>
+
+            </header>
+
+            {/* =====================================================
+                CUERPO DE LA NOTICIA
+            ===================================================== */}
+
+            <div className="max-w-3xl">
+
+              {post.contenido?.map((block, index) => {
+
+                // IMAGEN DENTRO DEL ARTÍCULO
+
+                if (
+                  block._type === "image" &&
+                  block.asset
+                ) {
+                  return (
+                    <figure
+                      key={block._key || index}
+                      className="my-10"
+                    >
+
+                      <div className="rounded-lg overflow-hidden bg-[#F3F4F6]">
+
+                        <img
+                          src={urlFor(block)
+                            .width(1400)
+                            .url()}
+                          alt={block.pie || ""}
+                          className="w-full max-h-[650px] object-contain"
+                        />
+
+                      </div>
+
+                      {block.pie && (
+                        <figcaption className="text-sm text-[#6B7280] mt-3">
+                          {block.pie}
+                        </figcaption>
+                      )}
+
+                    </figure>
+                  );
+                }
+
+                if (block._type !== "block") {
+                  return null;
+                }
+
+                const texto =
+                  block.children
+                    ?.map((child) => child.text || "")
+                    .join("") || "";
+
+                if (!texto) {
+                  return null;
+                }
+
+                // H2
+
+                if (block.style === "h2") {
+                  return (
+                    <h2
+                      key={block._key || index}
+                      className="text-2xl md:text-3xl font-extrabold text-[#1F2937] mt-12 mb-5"
+                    >
+                      {texto}
+                    </h2>
+                  );
+                }
+
+                // H3
+
+                if (block.style === "h3") {
+                  return (
+                    <h3
+                      key={block._key || index}
+                      className="text-xl md:text-2xl font-bold text-[#374151] mt-10 mb-4"
+                    >
+                      {texto}
+                    </h3>
+                  );
+                }
+
+                // CITA
+
+                if (block.style === "blockquote") {
+                  return (
+                    <blockquote
+                      key={block._key || index}
+                      className="border-l-4 border-[#D4A72C] pl-6 py-2 my-10 text-xl md:text-2xl italic text-[#4B5563]"
+                    >
+                      {texto}
+                    </blockquote>
+                  );
+                }
+
+                // PÁRRAFO
+
+                return (
+                  <p
+                    key={block._key || index}
+                    className="text-[#4B5563] leading-[1.8] mb-7 text-lg"
+                  >
+                    {texto}
+                  </p>
+                );
+              })}
+
+            </div>
+
+            {/* =====================================================
+                COMPARTIR
+            ===================================================== */}
+
+            <div className="max-w-3xl mt-14 pt-8 border-t border-[#E5E7EB]">
+
+              <p className="text-sm font-bold uppercase tracking-wider text-[#1F2937] mb-4">
+                Compartir esta noticia
               </p>
-            ))}
+
+              <div className="flex flex-wrap gap-3">
+
+                <button
+                  type="button"
+                  onClick={compartirFacebook}
+                  className="px-5 py-3 rounded-md border border-[#D1D5DB] bg-white text-sm font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+                >
+                  Facebook
+                </button>
+
+                <button
+                  type="button"
+                  onClick={compartirWhatsApp}
+                  className="px-5 py-3 rounded-md border border-[#D1D5DB] bg-white text-sm font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+                >
+                  WhatsApp
+                </button>
+
+                <button
+                  type="button"
+                  onClick={compartirX}
+                  className="px-5 py-3 rounded-md border border-[#D1D5DB] bg-white text-sm font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+                >
+                  X
+                </button>
+
+                <button
+                  type="button"
+                  onClick={copiarEnlace}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-md border border-[#D1D5DB] bg-white text-sm font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+                >
+
+                  {copiado ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copiar enlace
+                    </>
+                  )}
+
+                </button>
+
+              </div>
+
+            </div>
+
           </div>
-        </div>
-      </section>
+
+        </article>
+
+      </main>
+
     </Layout>
   );
 };
