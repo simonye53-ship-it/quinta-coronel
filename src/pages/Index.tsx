@@ -48,26 +48,6 @@ interface InicioContent {
   novedadesDescripcion?: string;
   novedadesBoton?: string;
 
-  noticia1Titulo?: string;
-  noticia1Fecha?: string;
-  noticia1Texto?: string;
-  noticia1Imagen?: any;
-
-  noticia2Titulo?: string;
-  noticia2Fecha?: string;
-  noticia2Texto?: string;
-  noticia2Imagen?: any;
-
-  noticia3Titulo?: string;
-  noticia3Fecha?: string;
-  noticia3Texto?: string;
-  noticia3Imagen?: any;
-
-  noticia4Titulo?: string;
-  noticia4Fecha?: string;
-  noticia4Texto?: string;
-  noticia4Imagen?: any;
-
   redesTitulo?: string;
   redesTexto?: string;
 
@@ -86,9 +66,35 @@ interface InicioContent {
   socioLink?: string;
 }
 
+interface NoticiaInicio {
+  _id: string;
+  titulo?: string;
+  slug?: string;
+  fecha?: string;
+  categoria?: string;
+  imagenPrincipal?: any;
+
+  contenido?: {
+    _key?: string;
+    _type?: string;
+    style?: string;
+
+    children?: {
+      _key?: string;
+      _type?: string;
+      text?: string;
+    }[];
+  }[];
+}
+
 const Index = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [contenido, setContenido] = useState<InicioContent | null>(null);
+
+  const [contenido, setContenido] =
+    useState<InicioContent | null>(null);
+
+  const [noticiasInicio, setNoticiasInicio] =
+    useState<NoticiaInicio[]>([]);
 
   // =====================================================
   // CARGAR CONTENIDO DESDE SANITY
@@ -96,13 +102,49 @@ const Index = () => {
 
   useEffect(() => {
     sanityClient
-      .fetch<InicioContent>(`*[_type == "inicio"][0]`)
+      .fetch<InicioContent>(
+        `*[_type == "inicio" && _id == "inicio"][0]`
+      )
       .then((data) => {
         console.log("Contenido desde Sanity:", data);
         setContenido(data);
       })
       .catch((error) => {
-        console.error("Error cargando Sanity:", error);
+        console.error(
+          "Error cargando contenido de Inicio:",
+          error
+        );
+      });
+
+    sanityClient
+      .fetch<NoticiaInicio[]>(`
+        *[
+          _type == "noticia" &&
+          defined(slug.current)
+        ]
+        | order(fecha desc)[0...4] {
+          _id,
+          titulo,
+          "slug": slug.current,
+          fecha,
+          categoria,
+          imagenPrincipal,
+          contenido
+        }
+      `)
+      .then((data) => {
+        console.log(
+          "Últimas noticias desde Sanity:",
+          data
+        );
+
+        setNoticiasInicio(data || []);
+      })
+      .catch((error) => {
+        console.error(
+          "Error cargando noticias del inicio:",
+          error
+        );
       });
   }, []);
 
@@ -113,7 +155,9 @@ const Index = () => {
   const slides = [
     {
       image: contenido?.slider1Imagen
-        ? urlFor(contenido.slider1Imagen).width(1920).url()
+        ? urlFor(contenido.slider1Imagen)
+            .width(1920)
+            .url()
         : hero1,
 
       title:
@@ -131,7 +175,9 @@ const Index = () => {
 
     {
       image: contenido?.slider2Imagen
-        ? urlFor(contenido.slider2Imagen).width(1920).url()
+        ? urlFor(contenido.slider2Imagen)
+            .width(1920)
+            .url()
         : hero2,
 
       title:
@@ -149,7 +195,9 @@ const Index = () => {
 
     {
       image: contenido?.slider3Imagen
-        ? urlFor(contenido.slider3Imagen).width(1920).url()
+        ? urlFor(contenido.slider3Imagen)
+            .width(1920)
+            .url()
         : hero3,
 
       title:
@@ -167,9 +215,12 @@ const Index = () => {
   ];
 
   // Cambio automático del slider
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide(
+        (prev) => (prev + 1) % slides.length
+      );
     }, 6000);
 
     return () => clearInterval(timer);
@@ -181,13 +232,16 @@ const Index = () => {
 
   const prevSlide = () => {
     setCurrentSlide(
-      (prev) => (prev - 1 + slides.length) % slides.length
+      (prev) =>
+        (prev - 1 + slides.length) %
+        slides.length
     );
   };
 
   const nextSlide = () => {
     setCurrentSlide(
-      (prev) => (prev + 1) % slides.length
+      (prev) =>
+        (prev + 1) % slides.length
     );
   };
 
@@ -198,19 +252,30 @@ const Index = () => {
   const quickLinks = [
     {
       label: "Nuestra Historia",
-      path: contenido?.accesoHistoria || "/historia",
+      path:
+        contenido?.accesoHistoria ||
+        "/historia",
     },
+
     {
       label: "Oficialidad",
-      path: contenido?.accesoOficialidad || "/oficialidad",
+      path:
+        contenido?.accesoOficialidad ||
+        "/oficialidad",
     },
+
     {
       label: "Material Mayor",
-      path: contenido?.accesoMaterial || "/material-mayor",
+      path:
+        contenido?.accesoMaterial ||
+        "/material-mayor",
     },
+
     {
       label: "Contacto",
-      path: contenido?.accesoContacto || "/contacto",
+      path:
+        contenido?.accesoContacto ||
+        "/contacto",
     },
   ];
 
@@ -218,87 +283,58 @@ const Index = () => {
   // NOVEDADES
   // =====================================================
 
-  const newsItems = [
-    {
-      id: 1,
+  const obtenerExtracto = (
+    contenidoNoticia?: NoticiaInicio["contenido"],
+    limite = 110
+  ) => {
+    if (!contenidoNoticia) return "";
 
-      title:
-        contenido?.noticia1Titulo ||
-        "Entrenamiento de Rescate Vehicular 2025",
+    const texto = contenidoNoticia
+      .filter(
+        (block) =>
+          block._type === "block"
+      )
+      .map(
+        (block) =>
+          block.children
+            ?.map(
+              (child) =>
+                child.text || ""
+            )
+            .join("") || ""
+      )
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-      excerpt:
-        contenido?.noticia1Texto ||
-        "Nuestros voluntarios completaron con éxito la última jornada de capacitación en rescate vehicular con herramientas Holmatro.",
+    if (texto.length <= limite) {
+      return texto;
+    }
 
-      image: contenido?.noticia1Imagen
-        ? urlFor(contenido.noticia1Imagen).width(900).url()
-        : fotoRescate,
+    return `${texto
+      .slice(0, limite)
+      .trim()}...`;
+  };
 
-      date:
-        contenido?.noticia1Fecha ||
-        "15 Mar 2025",
-    },
+  const formatearFecha = (
+    fecha?: string
+  ) => {
+    if (!fecha) return "";
 
-    {
-      id: 2,
-
-      title:
-        contenido?.noticia2Titulo ||
-        "Jornada Comunitaria en Lagunillas",
-
-      excerpt:
-        contenido?.noticia2Texto ||
-        "La compañía participó en una actividad comunitaria con los vecinos del sector, acercando la labor bomberil a los más pequeños.",
-
-      image: contenido?.noticia2Imagen
-        ? urlFor(contenido.noticia2Imagen).width(900).url()
-        : fotoComunidad,
-
-      date:
-        contenido?.noticia2Fecha ||
-        "28 Feb 2025",
-    },
-
-    {
-      id: 3,
-
-      title:
-        contenido?.noticia3Titulo ||
-        "Nuevo Equipamiento para la Compañía",
-
-      excerpt:
-        contenido?.noticia3Texto ||
-        "Gracias al apoyo de nuestros socios, la compañía recibió nuevo equipamiento de protección personal para sus voluntarios.",
-
-      image: contenido?.noticia3Imagen
-        ? urlFor(contenido.noticia3Imagen).width(900).url()
-        : fotoEquipo,
-
-      date:
-        contenido?.noticia3Fecha ||
-        "10 Feb 2025",
-    },
-
-    {
-      id: 4,
-
-      title:
-        contenido?.noticia4Titulo ||
-        "Ceremonia de Aniversario 74°",
-
-      excerpt:
-        contenido?.noticia4Texto ||
-        "La Quinta Compañía celebró su 74° aniversario con una emotiva ceremonia en el cuartel de Lagunillas 2.",
-
-      image: contenido?.noticia4Imagen
-        ? urlFor(contenido.noticia4Imagen).width(900).url()
-        : fotoFormacion,
-
-      date:
-        contenido?.noticia4Fecha ||
-        "20 Feb 2025",
-    },
-  ];
+    return new Intl.DateTimeFormat(
+      "es-CL",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      }
+    ).format(
+      new Date(
+        `${fecha}T00:00:00Z`
+      )
+    );
+  };
 
   // =====================================================
   // REDES SOCIALES
@@ -308,20 +344,24 @@ const Index = () => {
     {
       icon: Facebook,
       label: "Facebook",
-      href: contenido?.facebookUrl || "#",
+      href:
+        contenido?.facebookUrl || "#",
     },
+
     {
       icon: Instagram,
       label: "Instagram",
-      href: contenido?.instagramUrl || "#",
+      href:
+        contenido?.instagramUrl || "#",
     },
+
     {
       icon: Youtube,
       label: "YouTube",
-      href: contenido?.youtubeUrl || "#",
+      href:
+        contenido?.youtubeUrl || "#",
     },
   ];
- 
 
   return (
     <Layout>
@@ -336,16 +376,32 @@ const Index = () => {
 
           <motion.div
             key={currentSlide}
-            initial={{opacity: 0, scale: 1.1}}
-            animate={{opacity: 1, scale: 1}}
-            exit={{opacity: 0}}
-            transition={{duration: 1.2}}
+            initial={{
+              opacity: 0,
+              scale: 1.1,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            transition={{
+              duration: 1.2,
+            }}
             className="absolute inset-0"
           >
 
             <img
-              src={slides[currentSlide].image}
-              alt={slides[currentSlide].title}
+              src={
+                slides[currentSlide]
+                  .image
+              }
+              alt={
+                slides[currentSlide]
+                  .title
+              }
               className="w-full h-full object-cover"
               width={1920}
               height={1080}
@@ -367,25 +423,49 @@ const Index = () => {
 
               <motion.div
                 key={currentSlide}
-                initial={{opacity: 0, y: 40}}
-                animate={{opacity: 1, y: 0}}
-                exit={{opacity: 0, y: -20}}
-                transition={{duration: 0.8, delay: 0.3}}
+                initial={{
+                  opacity: 0,
+                  y: 40,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -20,
+                }}
+                transition={{
+                  duration: 0.8,
+                  delay: 0.3,
+                }}
                 className="max-w-2xl"
               >
 
                 <div className="w-16 h-1 bg-gold mb-6" />
 
                 <h1 className="text-4xl md:text-6xl font-black uppercase text-primary-foreground leading-tight mb-4">
-                  {slides[currentSlide].title}
+                  {
+                    slides[
+                      currentSlide
+                    ].title
+                  }
                 </h1>
 
                 <p className="text-lg md:text-xl font-semibold text-gold uppercase tracking-wider mb-3">
-                  {slides[currentSlide].subtitle}
+                  {
+                    slides[
+                      currentSlide
+                    ].subtitle
+                  }
                 </p>
 
                 <p className="text-primary-foreground/80 text-base md:text-lg max-w-lg">
-                  {slides[currentSlide].description}
+                  {
+                    slides[
+                      currentSlide
+                    ].description
+                  }
                 </p>
 
               </motion.div>
@@ -408,7 +488,9 @@ const Index = () => {
 
                 <button
                   key={i}
-                  onClick={() => goToSlide(i)}
+                  onClick={() =>
+                    goToSlide(i)
+                  }
                   className={`h-1 rounded-full transition-all duration-300 ${
                     i === currentSlide
                       ? "w-12 bg-gold"
@@ -454,21 +536,23 @@ const Index = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-primary-foreground/10">
 
-            {quickLinks.map((item) => (
+            {quickLinks.map(
+              (item) => (
 
-              <Link
-                key={item.label}
-                to={item.path}
-                className="py-5 px-4 text-center text-primary-foreground font-bold text-xs md:text-sm uppercase tracking-wider hover:bg-primary-foreground/10 transition-colors flex items-center justify-center gap-2"
-              >
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  className="py-5 px-4 text-center text-primary-foreground font-bold text-xs md:text-sm uppercase tracking-wider hover:bg-primary-foreground/10 transition-colors flex items-center justify-center gap-2"
+                >
 
-                {item.label}
+                  {item.label}
 
-                <ArrowRight className="h-3 w-3" />
+                  <ArrowRight className="h-3 w-3" />
 
-              </Link>
+                </Link>
 
-            ))}
+              )
+            )}
 
           </div>
 
@@ -489,58 +573,123 @@ const Index = () => {
             <div className="w-16 h-1 bg-secondary mx-auto mb-4" />
 
             <h2 className="section-title text-foreground">
-              {contenido?.novedadesTitulo || "Novedades"}
+              {contenido
+                ?.novedadesTitulo ||
+                "Novedades"}
             </h2>
 
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              {contenido?.novedadesDescripcion ||
+              {contenido
+                ?.novedadesDescripcion ||
                 "Últimas noticias y actividades de la Quinta Compañía"}
             </p>
 
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {noticiasInicio.length > 0 ? (
 
-            {newsItems.map((item) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
-              <Link
-                key={item.id}
-                to={`/noticias/${item.id}`}
-                className="group bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-border"
-              >
+              {noticiasInicio.map(
+                (item) => {
 
-                <div className="aspect-[4/3] overflow-hidden">
+                  const imagen =
+                    item.imagenPrincipal
+                      ? urlFor(
+                          item.imagenPrincipal
+                        )
+                          .width(900)
+                          .height(675)
+                          .url()
+                      : fotoEquipo;
 
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+                  const extracto =
+                    obtenerExtracto(
+                      item.contenido
+                    );
 
-                </div>
+                  return (
 
-                <div className="p-5">
+                    <Link
+                      key={item._id}
+                      to={`/noticias/${item.slug}`}
+                      className="group bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-border"
+                    >
 
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                    {item.date}
-                  </span>
+                      <div className="aspect-[4/3] overflow-hidden">
 
-                  <h3 className="font-bold text-foreground mt-2 mb-2 text-sm leading-snug group-hover:text-primary transition-colors">
-                    {item.title}
-                  </h3>
+                        <img
+                          src={imagen}
+                          alt={
+                            item.titulo ||
+                            "Noticia"
+                          }
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
 
-                  <p className="text-muted-foreground text-xs leading-relaxed line-clamp-3">
-                    {item.excerpt}
-                  </p>
+                      </div>
 
-                </div>
+                      <div className="p-5">
 
-              </Link>
+                        <div className="flex flex-wrap items-center gap-2">
 
-            ))}
+                          {item.categoria && (
 
-          </div>
+                            <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                              {
+                                item.categoria
+                              }
+                            </span>
+
+                          )}
+
+                          {item.fecha && (
+
+                            <span className="text-xs text-muted-foreground">
+                              {formatearFecha(
+                                item.fecha
+                              )}
+                            </span>
+
+                          )}
+
+                        </div>
+
+                        <h3 className="font-bold text-foreground mt-2 mb-2 text-sm leading-snug group-hover:text-primary transition-colors">
+                          {item.titulo ||
+                            "Noticia"}
+                        </h3>
+
+                        {extracto && (
+
+                          <p className="text-muted-foreground text-xs leading-relaxed line-clamp-3">
+                            {extracto}
+                          </p>
+
+                        )}
+
+                      </div>
+
+                    </Link>
+
+                  );
+                }
+              )}
+
+            </div>
+
+          ) : (
+
+            <div className="text-center py-8">
+
+              <p className="text-muted-foreground">
+                Próximamente publicaremos nuevas noticias y actividades.
+              </p>
+
+            </div>
+
+          )}
 
           <div className="text-center mt-10">
 
@@ -549,7 +698,9 @@ const Index = () => {
               className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground font-bold uppercase text-sm tracking-wider px-8 py-3 rounded-md hover:opacity-90 transition-opacity"
             >
 
-              {contenido?.novedadesBoton || "Ver Todas las Noticias"}
+              {contenido
+                ?.novedadesBoton ||
+                "Ver Todas las Noticias"}
 
               <ArrowRight className="h-4 w-4" />
 
@@ -576,34 +727,44 @@ const Index = () => {
               <div className="w-16 h-1 bg-gold mb-6" />
 
               <h2 className="text-3xl md:text-4xl font-black uppercase text-navy-foreground leading-tight mb-4">
-                {contenido?.redesTitulo ||
+                {contenido
+                  ?.redesTitulo ||
                   "Síguenos en Redes Sociales"}
               </h2>
 
               <p className="text-navy-foreground/70 mb-8 max-w-md">
-                {contenido?.redesTexto ||
+                {contenido
+                  ?.redesTexto ||
                   "Mantente informado sobre nuestras actividades, entrenamientos y servicios a la comunidad de Coronel."}
               </p>
 
               <div className="flex flex-wrap gap-4">
 
-                {socialLinks.map((social) => (
+                {socialLinks.map(
+                  (social) => (
 
-                  <a
-                    key={social.label}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 bg-navy-foreground/10 text-navy-foreground hover:bg-gold hover:text-gold-foreground px-5 py-3 rounded-md font-bold text-sm uppercase tracking-wider transition-colors"
-                  >
+                    <a
+                      key={
+                        social.label
+                      }
+                      href={
+                        social.href
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-navy-foreground/10 text-navy-foreground hover:bg-gold hover:text-gold-foreground px-5 py-3 rounded-md font-bold text-sm uppercase tracking-wider transition-colors"
+                    >
 
-                    <social.icon className="h-5 w-5" />
+                      <social.icon className="h-5 w-5" />
 
-                    {social.label}
+                      {
+                        social.label
+                      }
 
-                  </a>
+                    </a>
 
-                ))}
+                  )
+                )}
 
               </div>
 
@@ -616,7 +777,9 @@ const Index = () => {
               <img
                 src={
                   contenido?.redesImagen1
-                    ? urlFor(contenido.redesImagen1)
+                    ? urlFor(
+                        contenido.redesImagen1
+                      )
                         .width(800)
                         .height(800)
                         .url()
@@ -630,7 +793,9 @@ const Index = () => {
               <img
                 src={
                   contenido?.redesImagen2
-                    ? urlFor(contenido.redesImagen2)
+                    ? urlFor(
+                        contenido.redesImagen2
+                      )
                         .width(800)
                         .height(800)
                         .url()
@@ -644,7 +809,9 @@ const Index = () => {
               <img
                 src={
                   contenido?.redesImagen3
-                    ? urlFor(contenido.redesImagen3)
+                    ? urlFor(
+                        contenido.redesImagen3
+                      )
                         .width(800)
                         .height(800)
                         .url()
@@ -658,7 +825,9 @@ const Index = () => {
               <img
                 src={
                   contenido?.redesImagen4
-                    ? urlFor(contenido.redesImagen4)
+                    ? urlFor(
+                        contenido.redesImagen4
+                      )
                         .width(800)
                         .height(800)
                         .url()
@@ -686,12 +855,14 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
 
           <h2 className="text-2xl md:text-3xl font-black uppercase text-secondary-foreground mb-3">
-            {contenido?.socioTitulo ||
+            {contenido
+              ?.socioTitulo ||
               "¿Quieres apoyar a tu Quinta Compañía?"}
           </h2>
 
           <p className="text-secondary-foreground/80 mb-6 max-w-lg mx-auto">
-            {contenido?.socioTexto ||
+            {contenido
+              ?.socioTexto ||
               "Hazte socio colaborador con un aporte mensual y ayúdanos a seguir sirviendo a Coronel."}
           </p>
 
@@ -704,8 +875,11 @@ const Index = () => {
             rel="noopener noreferrer"
             className="inline-block bg-navy text-navy-foreground font-bold uppercase text-sm tracking-wider px-10 py-4 rounded-md hover:opacity-90 transition-opacity"
           >
-            {contenido?.socioBoton ||
+
+            {contenido
+              ?.socioBoton ||
               "Hazte Socio Ahora"}
+
           </a>
 
         </div>
