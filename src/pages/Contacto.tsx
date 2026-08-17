@@ -1,6 +1,12 @@
 import {useEffect, useState} from "react";
 import Layout from "@/components/Layout";
-import {Mail, MapPin, Phone, Send} from "lucide-react";
+import {
+  Mail,
+  MapPin,
+  Phone,
+  Send,
+  ExternalLink,
+} from "lucide-react";
 import {sanityClient} from "../lib/sanity";
 
 interface ContactoContent {
@@ -35,6 +41,13 @@ const Contacto = () => {
     tipo: "consulta",
     mensaje: "",
   });
+
+  // =====================================================
+  // CORREO DE DESTINO
+  // =====================================================
+
+  const correoDestino =
+    "quinta@bomberoscoronel.cl";
 
   // =====================================================
   // CARGAR CONTENIDO DESDE SANITY
@@ -72,23 +85,128 @@ const Contacto = () => {
   }, []);
 
   // =====================================================
-  // ENVÍO DEL FORMULARIO
+  // NOMBRE LEGIBLE DEL MOTIVO
   // =====================================================
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const obtenerMotivo = (tipo: string) => {
+    switch (tipo) {
+      case "postulacion":
+        return "Postulación como Voluntario";
 
-    alert(
-      contenido?.mensajeExito ||
-        "Formulario enviado. Nos pondremos en contacto contigo pronto."
+      case "sugerencia":
+        return "Sugerencia";
+
+      case "reclamo":
+        return "Reclamo";
+
+      case "felicitacion":
+        return "Felicitación";
+
+      default:
+        return "Consulta General";
+    }
+  };
+
+  // =====================================================
+  // GENERAR ASUNTO Y CUERPO
+  // =====================================================
+
+  const prepararCorreo = () => {
+    const motivo = obtenerMotivo(
+      formData.tipo
     );
 
-    setFormData({
-      nombre: "",
-      email: "",
-      tipo: "consulta",
-      mensaje: "",
-    });
+    const asunto =
+      `${motivo} - Sitio web Quinta Compañía`;
+
+    const cuerpo =
+`Estimados Quinta Compañía de Bomberos de Coronel:
+
+Mi nombre es ${formData.nombre}.
+
+Correo de contacto:
+${formData.email}
+
+Motivo:
+${motivo}
+
+Mensaje:
+${formData.mensaje}
+
+Saludos,
+${formData.nombre}
+
+Mensaje preparado desde el sitio web de la Quinta Compañía del Cuerpo de Bomberos de Coronel.`;
+
+    return {
+      motivo,
+      asunto,
+      cuerpo,
+    };
+  };
+
+  // =====================================================
+  // ABRIR APP DE CORREO
+  // =====================================================
+
+  const handleSubmit = (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
+
+    const {asunto, cuerpo} =
+      prepararCorreo();
+
+    const mailto =
+      `mailto:${correoDestino}` +
+      `?subject=${encodeURIComponent(
+        asunto
+      )}` +
+      `&body=${encodeURIComponent(
+        cuerpo
+      )}`;
+
+    window.location.href = mailto;
+  };
+
+  // =====================================================
+  // ABRIR GMAIL WEB
+  // =====================================================
+
+  const abrirGmail = () => {
+    const form = document.querySelector(
+      "form"
+    ) as HTMLFormElement | null;
+
+    if (
+      form &&
+      !form.reportValidity()
+    ) {
+      return;
+    }
+
+    const {asunto, cuerpo} =
+      prepararCorreo();
+
+    const gmailUrl =
+      "https://mail.google.com/mail/" +
+      "?view=cm" +
+      "&fs=1" +
+      `&to=${encodeURIComponent(
+        correoDestino
+      )}` +
+      `&su=${encodeURIComponent(
+        asunto
+      )}` +
+      `&body=${encodeURIComponent(
+        cuerpo
+      )}`;
+
+    window.open(
+      gmailUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   // =====================================================
@@ -96,7 +214,8 @@ const Contacto = () => {
   // =====================================================
 
   const heroTitulo =
-    contenido?.heroTitulo || "Contacto";
+    contenido?.heroTitulo ||
+    "Contacto";
 
   const heroSubtitulo =
     contenido?.heroSubtitulo ||
@@ -224,16 +343,19 @@ const Contacto = () => {
 
                     <div className="mt-1">
 
-                      {correos.map((correo, index) => (
+                      {correos.map(
+                        (correo, index) => (
 
-                        <p
-                          key={`${correo}-${index}`}
-                          className="text-muted-foreground text-xs md:text-sm leading-relaxed"
-                        >
-                          {correo}
-                        </p>
+                          <a
+                            key={`${correo}-${index}`}
+                            href={`mailto:${correo}`}
+                            className="block text-muted-foreground text-xs md:text-sm leading-relaxed hover:text-primary transition-colors"
+                          >
+                            {correo}
+                          </a>
 
-                      ))}
+                        )
+                      )}
 
                     </div>
 
@@ -309,11 +431,14 @@ const Contacto = () => {
                     type="text"
                     required
                     maxLength={100}
-                    value={formData.nombre}
+                    value={
+                      formData.nombre
+                    }
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        nombre: e.target.value,
+                        nombre:
+                          e.target.value,
                       })
                     }
                     className="w-full px-4 py-3 border border-border rounded-md bg-background text-sm md:text-base text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
@@ -335,11 +460,14 @@ const Contacto = () => {
                     type="email"
                     required
                     maxLength={255}
-                    value={formData.email}
+                    value={
+                      formData.email
+                    }
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        email: e.target.value,
+                        email:
+                          e.target.value,
                       })
                     }
                     className="w-full px-4 py-3 border border-border rounded-md bg-background text-sm md:text-base text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
@@ -358,11 +486,14 @@ const Contacto = () => {
                   </label>
 
                   <select
-                    value={formData.tipo}
+                    value={
+                      formData.tipo
+                    }
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        tipo: e.target.value,
+                        tipo:
+                          e.target.value,
                       })
                     }
                     className="w-full px-4 py-3 border border-border rounded-md bg-background text-sm md:text-base text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
@@ -405,11 +536,14 @@ const Contacto = () => {
                     required
                     maxLength={1000}
                     rows={5}
-                    value={formData.mensaje}
+                    value={
+                      formData.mensaje
+                    }
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        mensaje: e.target.value,
+                        mensaje:
+                          e.target.value,
                       })
                     }
                     className="w-full px-4 py-3 border border-border rounded-md bg-background text-sm md:text-base text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors resize-none"
@@ -418,7 +552,19 @@ const Contacto = () => {
 
                 </div>
 
-                {/* BOTÓN */}
+                {/* AVISO */}
+
+                <div className="bg-muted/60 border border-border rounded-md p-4">
+
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Puedes abrir el mensaje en tu aplicación de correo o utilizar Gmail desde el navegador. En ambos casos podrás revisar el correo antes de enviarlo.
+                  </p>
+
+                </div>
+
+                {/* =====================================================
+                    BOTÓN MAILTO
+                ===================================================== */}
 
                 <button
                   type="submit"
@@ -427,8 +573,23 @@ const Contacto = () => {
 
                   <Send className="h-4 w-4" />
 
-                  {contenido?.botonTexto ||
-                    "Enviar Mensaje"}
+                  Abrir aplicación de correo
+
+                </button>
+
+                {/* =====================================================
+                    BOTÓN GMAIL WEB
+                ===================================================== */}
+
+                <button
+                  type="button"
+                  onClick={abrirGmail}
+                  className="w-full flex items-center justify-center gap-2 border-2 border-primary text-primary bg-background font-bold uppercase text-xs md:text-sm tracking-wider px-8 py-4 rounded-md hover:bg-primary/5 transition-colors"
+                >
+
+                  <ExternalLink className="h-4 w-4" />
+
+                  Abrir en Gmail
 
                 </button>
 
