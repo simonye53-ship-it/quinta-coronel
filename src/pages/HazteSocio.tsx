@@ -53,6 +53,10 @@ const HazteSocio = () => {
   const [contenido, setContenido] =
     useState<HazteSocioContent | null>(null);
 
+  // =====================================================
+  // CARGAR CONTENIDO DESDE SANITY
+  // =====================================================
+
   useEffect(() => {
     sanityClient
       .fetch<HazteSocioContent>(
@@ -70,7 +74,6 @@ const HazteSocio = () => {
         }`
       )
       .then((data) => {
-        console.log("Hazte Socio desde Sanity:", data);
         setContenido(data);
       })
       .catch((error) => {
@@ -81,8 +84,13 @@ const HazteSocio = () => {
       });
   }, []);
 
+  // =====================================================
+  // FALLBACKS
+  // =====================================================
+
   const beneficios =
-    contenido?.beneficios && contenido.beneficios.length > 0
+    contenido?.beneficios &&
+    contenido.beneficios.length > 0
       ? contenido.beneficios
       : beneficiosFallback;
 
@@ -107,30 +115,39 @@ const HazteSocio = () => {
   return (
     <Layout>
 
-      {/* HERO */}
+      {/* =====================================================
+          HERO
+      ===================================================== */}
 
-      <section className="relative h-[50vh] min-h-[400px] flex items-end bg-navy overflow-hidden">
+      <section className="relative min-h-[330px] flex items-end bg-navy overflow-hidden">
 
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-navy" />
 
-        <div className="container mx-auto px-4 pb-16 relative z-10">
+        <div className="container mx-auto px-4 pb-16 pt-32 relative z-10">
 
-          <div className="w-16 h-1 bg-gold mb-6" />
+          <div className="max-w-4xl">
 
-          <h1 className="text-4xl md:text-6xl font-black uppercase text-primary-foreground">
-            {contenido?.heroTitulo || "Hazte Socio"}
-          </h1>
+            <div className="w-16 h-1 bg-gold mb-6" />
 
-          <p className="text-primary-foreground/70 text-lg mt-3">
-            {contenido?.heroSubtitulo ||
-              "Apoya a tu Quinta Compañía"}
-          </p>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase text-primary-foreground">
+              {contenido?.heroTitulo ||
+                "Hazte Socio"}
+            </h1>
+
+            <p className="text-sm sm:text-base md:text-lg text-primary-foreground/70 mt-3 max-w-2xl leading-relaxed">
+              {contenido?.heroSubtitulo ||
+                "Apoya a tu Quinta Compañía"}
+            </p>
+
+          </div>
 
         </div>
 
       </section>
 
-      {/* CONTENIDO */}
+      {/* =====================================================
+          CONTENIDO PRINCIPAL
+      ===================================================== */}
 
       <section className="py-20 bg-background">
 
@@ -140,41 +157,55 @@ const HazteSocio = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
 
+              {/* =================================================
+                  TEXTO
+              ================================================= */}
+
               <div>
 
                 <div className="w-16 h-1 bg-secondary mb-6" />
 
-                <h2 className="text-3xl font-extrabold uppercase text-foreground mb-4">
+                <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-foreground mb-4 leading-tight">
                   {contenido?.seccionTitulo ||
                     "Tu aporte hace la diferencia"}
                 </h2>
 
-                <p className="text-muted-foreground leading-relaxed mb-4">
+                <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4">
                   {contenido?.texto1 ||
                     "La Quinta Compañía del Cuerpo de Bomberos de Coronel es una institución sin fines de lucro que depende del apoyo de la comunidad para mantener su operación y equipamiento."}
                 </p>
 
-                <p className="text-muted-foreground leading-relaxed mb-6">
+                <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6">
                   {contenido?.texto2 ||
                     "Al hacerte socio colaborador, contribuyes directamente a la adquisición de equipos, mantenimiento de vehículos, capacitación de voluntarios y mejoras en nuestro cuartel."}
                 </p>
 
-                <a
-                  href={
-                    contenido?.botonLink ||
-                    "https://app.reveniu.com/quintacoronel"
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block bg-secondary text-secondary-foreground font-bold uppercase text-sm tracking-wider px-10 py-4 rounded-md hover:opacity-90 transition-opacity"
-                >
-                  {contenido?.botonTexto ||
-                    "Pagar Cuota de Socio"}
-                </a>
+                {/* BOTÓN CENTRADO EN MÓVIL */}
+
+                <div className="flex justify-center md:justify-start">
+
+                  <a
+                    href={
+                      contenido?.botonLink ||
+                      "https://app.reveniu.com/quintacoronel"
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-secondary text-secondary-foreground font-bold uppercase text-xs md:text-sm tracking-wider px-10 py-4 rounded-md hover:opacity-90 transition-opacity text-center"
+                  >
+                    {contenido?.botonTexto ||
+                      "Hazte Socio ahora"}
+                  </a>
+
+                </div>
 
               </div>
 
-              <div className="flex justify-center">
+              {/* =================================================
+                  IMAGEN / LOGO
+              ================================================= */}
+
+              <div className="flex justify-center mt-2 md:mt-0">
 
                 <img
                   src={imagenPrincipal}
@@ -182,23 +213,29 @@ const HazteSocio = () => {
                     contenido?.imagenAlt ||
                     "Escudos de la compañía"
                   }
-                  className="max-w-xs w-full"
+                  className="max-w-[220px] sm:max-w-[260px] md:max-w-xs w-full mx-auto"
                 />
 
               </div>
 
             </div>
 
-            {/* BENEFICIOS */}
+            {/* =====================================================
+                BENEFICIOS
+            ===================================================== */}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
               {beneficios.map((item, index) => {
+
                 const Icon = getIcon(item.tipo);
 
                 return (
                   <div
-                    key={item._key || `${item.titulo}-${index}`}
+                    key={
+                      item._key ||
+                      `${item.titulo}-${index}`
+                    }
                     className="bg-card rounded-lg p-8 border border-border text-center"
                   >
 
@@ -208,11 +245,12 @@ const HazteSocio = () => {
 
                     </div>
 
-                    <h3 className="font-extrabold uppercase text-foreground mb-2">
-                      {item.titulo || "Beneficio"}
+                    <h3 className="text-sm md:text-base font-extrabold uppercase text-foreground mb-2">
+                      {item.titulo ||
+                        "Beneficio"}
                     </h3>
 
-                    <p className="text-muted-foreground text-sm leading-relaxed">
+                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
                       {item.descripcion || ""}
                     </p>
 

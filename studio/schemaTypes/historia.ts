@@ -42,7 +42,7 @@ export const historia = defineType({
       of: [
         {
           type: 'object',
-          name: 'periodoHistorico',
+          name: 'periodoHistoria',
           title: 'Período histórico',
 
           fields: [

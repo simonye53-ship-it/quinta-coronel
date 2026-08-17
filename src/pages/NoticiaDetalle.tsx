@@ -6,6 +6,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+
 import {sanityClient, urlFor} from "../lib/sanity";
 
 interface PortableTextSpan {
@@ -80,7 +81,6 @@ const NoticiaDetalle = () => {
         {slug}
       )
       .then((data) => {
-        console.log("Noticia desde Sanity:", data);
         setPost(data);
         setCargando(false);
       })
@@ -110,7 +110,10 @@ const NoticiaDetalle = () => {
 
   const compartirWhatsApp = () => {
     const url = encodeURIComponent(window.location.href);
-    const titulo = encodeURIComponent(post?.titulo || "Noticia");
+
+    const titulo = encodeURIComponent(
+      post?.titulo || "Noticia"
+    );
 
     window.open(
       `https://wa.me/?text=${titulo}%20${url}`,
@@ -121,7 +124,10 @@ const NoticiaDetalle = () => {
 
   const compartirX = () => {
     const url = encodeURIComponent(window.location.href);
-    const titulo = encodeURIComponent(post?.titulo || "Noticia");
+
+    const titulo = encodeURIComponent(
+      post?.titulo || "Noticia"
+    );
 
     window.open(
       `https://twitter.com/intent/tweet?text=${titulo}&url=${url}`,
@@ -132,7 +138,9 @@ const NoticiaDetalle = () => {
 
   const copiarEnlace = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(
+        window.location.href
+      );
 
       setCopiado(true);
 
@@ -154,35 +162,40 @@ const NoticiaDetalle = () => {
   if (cargando) {
     return (
       <Layout>
-        <section className="py-32 bg-white">
+        <section className="py-32 bg-background">
+
           <div className="container mx-auto px-4 text-center">
-            <p className="text-[#6B7280]">
+
+            <p className="text-muted-foreground">
               Cargando noticia...
             </p>
+
           </div>
+
         </section>
       </Layout>
     );
   }
 
   // =====================================================
-  // NO ENCONTRADA
+  // NOTICIA NO ENCONTRADA
   // =====================================================
 
   if (!post) {
     return (
       <Layout>
-        <section className="py-32 bg-white">
+
+        <section className="py-32 bg-background">
 
           <div className="container mx-auto px-4 text-center">
 
-            <h1 className="text-3xl font-black uppercase text-[#1F2937] mb-4">
+            <h1 className="text-3xl font-black uppercase text-foreground mb-4">
               Noticia no encontrada
             </h1>
 
             <Link
               to="/noticias"
-              className="text-[#00549A] font-bold hover:underline"
+              className="text-primary font-bold hover:underline"
             >
               Volver a Noticias
             </Link>
@@ -190,32 +203,36 @@ const NoticiaDetalle = () => {
           </div>
 
         </section>
+
       </Layout>
     );
   }
 
-  const imagenPrincipal = post.imagenPrincipal
-    ? urlFor(post.imagenPrincipal)
-        .width(1600)
-        .url()
-    : null;
+  const imagenPrincipal =
+    post.imagenPrincipal
+      ? urlFor(post.imagenPrincipal)
+          .width(1600)
+          .url()
+      : null;
 
   return (
     <Layout>
 
       {/* =====================================================
-          CABECERA AZUL
+          CABECERA SOBRIA
       ===================================================== */}
 
-      <section className="bg-[#00549A] pt-28 pb-8">
+      <section className="relative bg-navy pt-28 pb-10 overflow-hidden">
 
-        <div className="container mx-auto px-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-navy" />
+
+        <div className="container mx-auto px-4 relative z-10">
 
           <div className="max-w-4xl mx-auto">
 
             <Link
               to="/noticias"
-              className="inline-flex items-center gap-2 text-white/80 hover:text-white text-sm font-semibold uppercase tracking-wider"
+              className="inline-flex items-center gap-2 text-primary-foreground/75 hover:text-primary-foreground text-sm font-semibold uppercase tracking-wider transition-colors"
             >
 
               <ArrowLeft className="h-4 w-4" />
@@ -234,26 +251,32 @@ const NoticiaDetalle = () => {
           ARTÍCULO
       ===================================================== */}
 
-      <main className="bg-white py-12 md:py-16">
+      <main className="bg-background py-12 md:py-16">
 
         <article className="container mx-auto px-4">
 
           <div className="max-w-4xl mx-auto">
 
-            {/* CATEGORÍA Y FECHA */}
+            {/* =====================================================
+                CATEGORÍA Y FECHA
+            ===================================================== */}
 
             <div className="flex flex-wrap items-center gap-3 mb-6">
 
               {post.categoria && (
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00549A]">
+
+                <span className="text-xs font-bold uppercase tracking-wider text-primary">
                   {post.categoria}
                 </span>
+
               )}
 
               {post.fecha && (
-                <span className="text-sm text-[#6B7280]">
+
+                <span className="text-sm text-muted-foreground">
                   {formatearFecha(post.fecha)}
                 </span>
+
               )}
 
             </div>
@@ -266,7 +289,7 @@ const NoticiaDetalle = () => {
 
               <figure className="mb-8">
 
-                <div className="w-full rounded-lg overflow-hidden bg-[#F3F4F6]">
+                <div className="w-full rounded-lg overflow-hidden bg-muted">
 
                   <img
                     src={imagenPrincipal}
@@ -286,119 +309,139 @@ const NoticiaDetalle = () => {
 
             <header className="max-w-3xl mb-10">
 
-              <div className="w-14 h-1 bg-[#D4A72C] mb-5" />
+              <div className="w-14 h-1 bg-gold mb-5" />
 
-              <h1 className="text-3xl md:text-5xl font-black uppercase text-[#1F2937] leading-[1.1]">
+              <h1 className="text-3xl md:text-5xl font-black uppercase text-foreground leading-[1.1]">
                 {post.titulo || "Noticia"}
               </h1>
 
             </header>
 
             {/* =====================================================
-                CUERPO DE LA NOTICIA
+                CONTENIDO
             ===================================================== */}
 
             <div className="max-w-3xl">
 
-              {post.contenido?.map((block, index) => {
+              {post.contenido?.map(
+                (block, index) => {
 
-                // IMAGEN DENTRO DEL ARTÍCULO
+                  // =================================================
+                  // IMAGEN INTERIOR
+                  // =================================================
 
-                if (
-                  block._type === "image" &&
-                  block.asset
-                ) {
+                  if (
+                    block._type === "image" &&
+                    block.asset
+                  ) {
+                    return (
+                      <figure
+                        key={block._key || index}
+                        className="my-10"
+                      >
+
+                        <div className="rounded-lg overflow-hidden bg-muted">
+
+                          <img
+                            src={urlFor(block)
+                              .width(1400)
+                              .url()}
+                            alt={block.pie || ""}
+                            className="w-full max-h-[650px] object-contain"
+                          />
+
+                        </div>
+
+                        {block.pie && (
+
+                          <figcaption className="text-sm text-muted-foreground mt-3">
+                            {block.pie}
+                          </figcaption>
+
+                        )}
+
+                      </figure>
+                    );
+                  }
+
+                  if (block._type !== "block") {
+                    return null;
+                  }
+
+                  const texto =
+                    block.children
+                      ?.map(
+                        (child) =>
+                          child.text || ""
+                      )
+                      .join("") || "";
+
+                  if (!texto) {
+                    return null;
+                  }
+
+                  // =================================================
+                  // TÍTULO H2
+                  // =================================================
+
+                  if (block.style === "h2") {
+                    return (
+                      <h2
+                        key={block._key || index}
+                        className="text-2xl md:text-3xl font-extrabold text-foreground mt-12 mb-5"
+                      >
+                        {texto}
+                      </h2>
+                    );
+                  }
+
+                  // =================================================
+                  // SUBTÍTULO H3
+                  // =================================================
+
+                  if (block.style === "h3") {
+                    return (
+                      <h3
+                        key={block._key || index}
+                        className="text-xl md:text-2xl font-bold text-foreground/90 mt-10 mb-4"
+                      >
+                        {texto}
+                      </h3>
+                    );
+                  }
+
+                  // =================================================
+                  // CITA
+                  // =================================================
+
+                  if (
+                    block.style ===
+                    "blockquote"
+                  ) {
+                    return (
+                      <blockquote
+                        key={block._key || index}
+                        className="border-l-4 border-gold pl-6 py-2 my-10 text-xl md:text-2xl italic text-muted-foreground"
+                      >
+                        {texto}
+                      </blockquote>
+                    );
+                  }
+
+                  // =================================================
+                  // PÁRRAFO
+                  // =================================================
+
                   return (
-                    <figure
+                    <p
                       key={block._key || index}
-                      className="my-10"
-                    >
-
-                      <div className="rounded-lg overflow-hidden bg-[#F3F4F6]">
-
-                        <img
-                          src={urlFor(block)
-                            .width(1400)
-                            .url()}
-                          alt={block.pie || ""}
-                          className="w-full max-h-[650px] object-contain"
-                        />
-
-                      </div>
-
-                      {block.pie && (
-                        <figcaption className="text-sm text-[#6B7280] mt-3">
-                          {block.pie}
-                        </figcaption>
-                      )}
-
-                    </figure>
-                  );
-                }
-
-                if (block._type !== "block") {
-                  return null;
-                }
-
-                const texto =
-                  block.children
-                    ?.map((child) => child.text || "")
-                    .join("") || "";
-
-                if (!texto) {
-                  return null;
-                }
-
-                // H2
-
-                if (block.style === "h2") {
-                  return (
-                    <h2
-                      key={block._key || index}
-                      className="text-2xl md:text-3xl font-extrabold text-[#1F2937] mt-12 mb-5"
+                      className="text-muted-foreground leading-[1.8] mb-7 text-lg"
                     >
                       {texto}
-                    </h2>
+                    </p>
                   );
                 }
-
-                // H3
-
-                if (block.style === "h3") {
-                  return (
-                    <h3
-                      key={block._key || index}
-                      className="text-xl md:text-2xl font-bold text-[#374151] mt-10 mb-4"
-                    >
-                      {texto}
-                    </h3>
-                  );
-                }
-
-                // CITA
-
-                if (block.style === "blockquote") {
-                  return (
-                    <blockquote
-                      key={block._key || index}
-                      className="border-l-4 border-[#D4A72C] pl-6 py-2 my-10 text-xl md:text-2xl italic text-[#4B5563]"
-                    >
-                      {texto}
-                    </blockquote>
-                  );
-                }
-
-                // PÁRRAFO
-
-                return (
-                  <p
-                    key={block._key || index}
-                    className="text-[#4B5563] leading-[1.8] mb-7 text-lg"
-                  >
-                    {texto}
-                  </p>
-                );
-              })}
+              )}
 
             </div>
 
@@ -406,9 +449,9 @@ const NoticiaDetalle = () => {
                 COMPARTIR
             ===================================================== */}
 
-            <div className="max-w-3xl mt-14 pt-8 border-t border-[#E5E7EB]">
+            <div className="max-w-3xl mt-14 pt-8 border-t border-border">
 
-              <p className="text-sm font-bold uppercase tracking-wider text-[#1F2937] mb-4">
+              <p className="text-sm font-bold uppercase tracking-wider text-foreground mb-4">
                 Compartir esta noticia
               </p>
 
@@ -417,7 +460,7 @@ const NoticiaDetalle = () => {
                 <button
                   type="button"
                   onClick={compartirFacebook}
-                  className="px-5 py-3 rounded-md border border-[#D1D5DB] bg-white text-sm font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+                  className="px-5 py-3 rounded-md border border-border bg-background text-sm font-semibold text-foreground hover:bg-muted transition-colors"
                 >
                   Facebook
                 </button>
@@ -425,7 +468,7 @@ const NoticiaDetalle = () => {
                 <button
                   type="button"
                   onClick={compartirWhatsApp}
-                  className="px-5 py-3 rounded-md border border-[#D1D5DB] bg-white text-sm font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+                  className="px-5 py-3 rounded-md border border-border bg-background text-sm font-semibold text-foreground hover:bg-muted transition-colors"
                 >
                   WhatsApp
                 </button>
@@ -433,7 +476,7 @@ const NoticiaDetalle = () => {
                 <button
                   type="button"
                   onClick={compartirX}
-                  className="px-5 py-3 rounded-md border border-[#D1D5DB] bg-white text-sm font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+                  className="px-5 py-3 rounded-md border border-border bg-background text-sm font-semibold text-foreground hover:bg-muted transition-colors"
                 >
                   X
                 </button>
@@ -441,7 +484,7 @@ const NoticiaDetalle = () => {
                 <button
                   type="button"
                   onClick={copiarEnlace}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-md border border-[#D1D5DB] bg-white text-sm font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-md border border-border bg-background text-sm font-semibold text-foreground hover:bg-muted transition-colors"
                 >
 
                   {copiado ? (

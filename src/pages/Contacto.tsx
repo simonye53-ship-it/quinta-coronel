@@ -61,7 +61,6 @@ const Contacto = () => {
         }`
       )
       .then((data) => {
-        console.log("Contacto desde Sanity:", data);
         setContenido(data);
       })
       .catch((error) => {
@@ -147,11 +146,11 @@ const Contacto = () => {
 
           <div className="w-16 h-1 bg-gold mb-6" />
 
-          <h1 className="text-4xl md:text-6xl font-black uppercase text-primary-foreground">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase text-primary-foreground">
             {heroTitulo}
           </h1>
 
-          <p className="text-primary-foreground/70 text-lg mt-3">
+          <p className="text-sm sm:text-base md:text-lg text-primary-foreground/70 mt-3 max-w-2xl leading-relaxed">
             {heroSubtitulo}
           </p>
 
@@ -177,7 +176,7 @@ const Contacto = () => {
 
               <div className="w-16 h-1 bg-secondary mb-6" />
 
-              <h2 className="text-2xl font-extrabold uppercase text-foreground mb-6">
+              <h2 className="text-xl md:text-2xl font-extrabold uppercase text-foreground mb-6 leading-tight">
                 {seccionTitulo}
               </h2>
 
@@ -195,11 +194,11 @@ const Contacto = () => {
 
                   <div>
 
-                    <h3 className="font-bold text-foreground text-sm uppercase">
+                    <h3 className="font-bold text-foreground text-xs md:text-sm uppercase">
                       Dirección
                     </h3>
 
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <p className="text-muted-foreground text-xs md:text-sm mt-1 leading-relaxed">
                       {direccion}
                     </p>
 
@@ -219,7 +218,7 @@ const Contacto = () => {
 
                   <div>
 
-                    <h3 className="font-bold text-foreground text-sm uppercase">
+                    <h3 className="font-bold text-foreground text-xs md:text-sm uppercase">
                       Correo Electrónico
                     </h3>
 
@@ -229,7 +228,7 @@ const Contacto = () => {
 
                         <p
                           key={`${correo}-${index}`}
-                          className="text-muted-foreground text-sm"
+                          className="text-muted-foreground text-xs md:text-sm leading-relaxed"
                         >
                           {correo}
                         </p>
@@ -254,11 +253,11 @@ const Contacto = () => {
 
                   <div>
 
-                    <h3 className="font-bold text-foreground text-sm uppercase">
+                    <h3 className="font-bold text-foreground text-xs md:text-sm uppercase">
                       Teléfono
                     </h3>
 
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <p className="text-muted-foreground text-xs md:text-sm mt-1 leading-relaxed">
                       {telefono}
                     </p>
 
@@ -274,11 +273,11 @@ const Contacto = () => {
 
               <div className="mt-10 p-6 bg-muted rounded-lg">
 
-                <h3 className="font-extrabold uppercase text-foreground text-sm mb-2">
+                <h3 className="font-extrabold uppercase text-foreground text-xs md:text-sm mb-2">
                   {postulacionTitulo}
                 </h3>
 
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <p className="text-muted-foreground text-xs md:text-sm leading-relaxed">
                   {postulacionTexto}
                 </p>
 
@@ -301,7 +300,7 @@ const Contacto = () => {
 
                 <div>
 
-                  <label className="block text-sm font-bold uppercase tracking-wider text-foreground mb-2">
+                  <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-foreground mb-2">
                     {contenido?.formularioNombreLabel ||
                       "Nombre Completo"}
                   </label>
@@ -317,7 +316,7 @@ const Contacto = () => {
                         nombre: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
+                    className="w-full px-4 py-3 border border-border rounded-md bg-background text-sm md:text-base text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
                     placeholder="Tu nombre"
                   />
 
@@ -327,7 +326,7 @@ const Contacto = () => {
 
                 <div>
 
-                  <label className="block text-sm font-bold uppercase tracking-wider text-foreground mb-2">
+                  <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-foreground mb-2">
                     {contenido?.formularioEmailLabel ||
                       "Correo Electrónico"}
                   </label>
@@ -343,7 +342,7 @@ const Contacto = () => {
                         email: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
+                    className="w-full px-4 py-3 border border-border rounded-md bg-background text-sm md:text-base text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
                     placeholder="tu@email.com"
                   />
 
@@ -353,7 +352,7 @@ const Contacto = () => {
 
                 <div>
 
-                  <label className="block text-sm font-bold uppercase tracking-wider text-foreground mb-2">
+                  <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-foreground mb-2">
                     {contenido?.formularioMotivoLabel ||
                       "Motivo"}
                   </label>
@@ -366,7 +365,7 @@ const Contacto = () => {
                         tipo: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
+                    className="w-full px-4 py-3 border border-border rounded-md bg-background text-sm md:text-base text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
                   >
 
                     <option value="consulta">
@@ -397,7 +396,7 @@ const Contacto = () => {
 
                 <div>
 
-                  <label className="block text-sm font-bold uppercase tracking-wider text-foreground mb-2">
+                  <label className="block text-xs md:text-sm font-bold uppercase tracking-wider text-foreground mb-2">
                     {contenido?.formularioMensajeLabel ||
                       "Mensaje"}
                   </label>
@@ -413,7 +412,7 @@ const Contacto = () => {
                         mensaje: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors resize-none"
+                    className="w-full px-4 py-3 border border-border rounded-md bg-background text-sm md:text-base text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors resize-none"
                     placeholder="Escribe tu mensaje aquí..."
                   />
 
@@ -423,7 +422,7 @@ const Contacto = () => {
 
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold uppercase text-sm tracking-wider px-8 py-4 rounded-md hover:opacity-90 transition-opacity"
+                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold uppercase text-xs md:text-sm tracking-wider px-8 py-4 rounded-md hover:opacity-90 transition-opacity"
                 >
 
                   <Send className="h-4 w-4" />

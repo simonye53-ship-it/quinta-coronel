@@ -158,7 +158,6 @@ const Historia = () => {
         `*[_type == "historia"][0]`
       )
       .then((data) => {
-        console.log("Historia desde Sanity:", data);
         setContenido(data);
       })
       .catch((error) => {
@@ -174,54 +173,62 @@ const Historia = () => {
   // =====================================================
 
   const heroImage = contenido?.heroImagen
-    ? urlFor(contenido.heroImagen).width(1920).url()
+    ? urlFor(contenido.heroImagen)
+        .width(1920)
+        .url()
     : fotoFormacion;
 
   const heroTitle =
-    contenido?.heroTitulo || "Nuestra Historia";
+    contenido?.heroTitulo ||
+    "Nuestra Historia";
 
   const heroSubtitle =
     contenido?.heroSubtitulo ||
     "Más de 70 años de Honor y Sacrificio al servicio de Coronel";
 
   const heroAlt =
-    contenido?.heroAlt || "Historia de la Quinta Compañía";
+    contenido?.heroAlt ||
+    "Historia de la Quinta Compañía";
 
   // =====================================================
   // LÍNEA DE TIEMPO
   // =====================================================
 
   const decades =
-    contenido?.periodos && contenido.periodos.length > 0
-      ? contenido.periodos.map((item, index) => ({
-          period:
-            item.periodo ||
-            `Periodo ${index + 1}`,
+    contenido?.periodos &&
+    contenido.periodos.length > 0
+      ? contenido.periodos.map(
+          (item, index) => ({
+            period:
+              item.periodo ||
+              `Periodo ${index + 1}`,
 
-          title:
-            item.titulo ||
-            "Periodo histórico",
+            title:
+              item.titulo ||
+              "Periodo histórico",
 
-          description:
-            item.descripcion || "",
+            description:
+              item.descripcion || "",
 
-          image: item.imagen
-            ? urlFor(item.imagen)
-                .width(1200)
-                .height(675)
-                .url()
-            : defaultDecades[index]?.image ||
-              fotoFormacion,
+            image: item.imagen
+              ? urlFor(item.imagen)
+                  .width(1200)
+                  .height(675)
+                  .url()
+              : defaultDecades[index]
+                  ?.image ||
+                fotoFormacion,
 
-          imageAlt:
-            item.imagenAlt ||
-            item.titulo ||
-            item.periodo ||
-            "Historia de la Quinta Compañía",
+            imageAlt:
+              item.imagenAlt ||
+              item.titulo ||
+              item.periodo ||
+              "Historia de la Quinta Compañía",
 
-          highlights:
-            item.hitos || [],
-        }))
+            highlights:
+              item.hitos || [],
+          })
+        )
       : defaultDecades;
 
   return (
@@ -245,11 +252,11 @@ const Historia = () => {
 
           <div className="w-16 h-1 bg-gold mb-6" />
 
-          <h1 className="text-4xl md:text-6xl font-black uppercase text-primary-foreground">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase text-primary-foreground">
             {heroTitle}
           </h1>
 
-          <p className="text-primary-foreground/70 text-lg mt-3 max-w-xl">
+          <p className="text-sm sm:text-base md:text-lg text-primary-foreground/70 mt-3 max-w-xl leading-relaxed">
             {heroSubtitle}
           </p>
 
@@ -271,98 +278,104 @@ const Historia = () => {
 
             <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-border -translate-x-1/2" />
 
-            {decades.map((decade, index) => (
+            {decades.map(
+              (decade, index) => (
 
-              <motion.div
-                key={`${decade.period}-${index}`}
-                initial={{
-                  opacity: 0,
-                  y: 60,
-                }}
-                whileInView={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                viewport={{
-                  once: true,
-                  margin: "-100px",
-                }}
-                transition={{
-                  duration: 0.6,
-                  delay: 0.1,
-                }}
-                className={`relative mb-20 md:mb-32 ${
-                  index % 2 === 0
-                    ? "md:pr-[55%]"
-                    : "md:pl-[55%]"
-                }`}
-              >
+                <motion.div
+                  key={`${decade.period}-${index}`}
+                  initial={{
+                    opacity: 0,
+                    y: 60,
+                  }}
+                  whileInView={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  viewport={{
+                    once: true,
+                    margin: "-100px",
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    delay: 0.1,
+                  }}
+                  className={`relative mb-20 md:mb-32 ${
+                    index % 2 === 0
+                      ? "md:pr-[55%]"
+                      : "md:pl-[55%]"
+                  }`}
+                >
 
-                {/* Punto de la línea de tiempo */}
+                  {/* Punto línea de tiempo */}
 
-                <div className="hidden md:block absolute left-1/2 top-8 w-4 h-4 rounded-full bg-primary border-4 border-background -translate-x-1/2 z-10" />
+                  <div className="hidden md:block absolute left-1/2 top-8 w-4 h-4 rounded-full bg-primary border-4 border-background -translate-x-1/2 z-10" />
 
-                {/* Contenido */}
+                  {/* TARJETA */}
 
-                <div className="bg-card rounded-lg overflow-hidden shadow-md border border-border">
+                  <div className="bg-card rounded-lg overflow-hidden shadow-md border border-border">
 
-                  <div className="aspect-[16/9] overflow-hidden">
+                    <div className="aspect-[16/9] overflow-hidden">
 
-                    <img
-                      src={decade.image}
-                      alt={decade.imageAlt}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
+                      <img
+                        src={decade.image}
+                        alt={decade.imageAlt}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+
+                    </div>
+
+                    <div className="p-6 md:p-8">
+
+                      <span className="text-[11px] md:text-xs font-bold uppercase tracking-wider text-primary">
+                        {decade.period}
+                      </span>
+
+                      <h3 className="text-xl md:text-2xl font-extrabold uppercase text-foreground mt-2 mb-3 leading-tight">
+                        {decade.title}
+                      </h3>
+
+                      <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4">
+                        {decade.description}
+                      </p>
+
+                      {decade.highlights.length >
+                        0 && (
+
+                        <ul className="space-y-2">
+
+                          {decade.highlights.map(
+                            (
+                              highlight,
+                              highlightIndex
+                            ) => (
+
+                              <li
+                                key={`${highlight}-${highlightIndex}`}
+                                className="flex items-start gap-2 text-xs md:text-sm text-muted-foreground leading-relaxed"
+                              >
+
+                                <span className="w-1.5 h-1.5 rounded-full bg-gold mt-1.5 flex-shrink-0" />
+
+                                {highlight}
+
+                              </li>
+
+                            )
+                          )}
+
+                        </ul>
+
+                      )}
+
+                    </div>
 
                   </div>
 
-                  <div className="p-6 md:p-8">
+                </motion.div>
 
-                    <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                      {decade.period}
-                    </span>
-
-                    <h3 className="text-2xl font-extrabold uppercase text-foreground mt-2 mb-3">
-                      {decade.title}
-                    </h3>
-
-                    <p className="text-muted-foreground leading-relaxed mb-4">
-                      {decade.description}
-                    </p>
-
-                    {decade.highlights.length > 0 && (
-
-                      <ul className="space-y-2">
-
-                        {decade.highlights.map(
-                          (highlight, highlightIndex) => (
-
-                            <li
-                              key={`${highlight}-${highlightIndex}`}
-                              className="flex items-start gap-2 text-sm text-muted-foreground"
-                            >
-
-                              <span className="w-1.5 h-1.5 rounded-full bg-gold mt-1.5 flex-shrink-0" />
-
-                              {highlight}
-
-                            </li>
-
-                          )
-                        )}
-
-                      </ul>
-
-                    )}
-
-                  </div>
-
-                </div>
-
-              </motion.div>
-
-            ))}
+              )
+            )}
 
           </div>
 

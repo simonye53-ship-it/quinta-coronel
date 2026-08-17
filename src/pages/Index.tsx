@@ -106,7 +106,6 @@ const Index = () => {
         `*[_type == "inicio" && _id == "inicio"][0]`
       )
       .then((data) => {
-        console.log("Contenido desde Sanity:", data);
         setContenido(data);
       })
       .catch((error) => {
@@ -133,11 +132,6 @@ const Index = () => {
         }
       `)
       .then((data) => {
-        console.log(
-          "Últimas noticias desde Sanity:",
-          data
-        );
-
         setNoticiasInicio(data || []);
       })
       .catch((error) => {
@@ -149,7 +143,7 @@ const Index = () => {
   }, []);
 
   // =====================================================
-  // SLIDER
+  // SLIDES
   // =====================================================
 
   const slides = [
@@ -214,34 +208,39 @@ const Index = () => {
     },
   ];
 
-  // Cambio automático del slider
+  // =====================================================
+  // CAMBIO AUTOMÁTICO DEL SLIDER
+  // =====================================================
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide(
-        (prev) => (prev + 1) % slides.length
-      );
+    const timer = window.setTimeout(() => {
+      setCurrentSlide((prev) => {
+        return (prev + 1) % 3;
+      });
     }, 6000);
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [currentSlide]);
+
+  // =====================================================
+  // CONTROLES DEL SLIDER
+  // =====================================================
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
   };
 
   const prevSlide = () => {
-    setCurrentSlide(
-      (prev) =>
-        (prev - 1 + slides.length) %
-        slides.length
+    setCurrentSlide((prev) =>
+      prev === 0 ? slides.length - 1 : prev - 1
     );
   };
 
   const nextSlide = () => {
-    setCurrentSlide(
-      (prev) =>
-        (prev + 1) % slides.length
+    setCurrentSlide((prev) =>
+      prev === slides.length - 1 ? 0 : prev + 1
     );
   };
 
@@ -378,7 +377,7 @@ const Index = () => {
             key={currentSlide}
             initial={{
               opacity: 0,
-              scale: 1.1,
+              scale: 1.05,
             }}
             animate={{
               opacity: 1,
@@ -388,20 +387,14 @@ const Index = () => {
               opacity: 0,
             }}
             transition={{
-              duration: 1.2,
+              duration: 0.8,
             }}
             className="absolute inset-0"
           >
 
             <img
-              src={
-                slides[currentSlide]
-                  .image
-              }
-              alt={
-                slides[currentSlide]
-                  .title
-              }
+              src={slides[currentSlide].image}
+              alt={slides[currentSlide].title}
               className="w-full h-full object-cover"
               width={1920}
               height={1080}
@@ -413,7 +406,9 @@ const Index = () => {
 
         </AnimatePresence>
 
-        {/* CONTENIDO DEL SLIDE */}
+        {/* =====================================================
+            CONTENIDO DEL SLIDE
+        ===================================================== */}
 
         <div className="absolute inset-0 flex items-end pb-32 md:pb-40">
 
@@ -422,10 +417,10 @@ const Index = () => {
             <AnimatePresence mode="wait">
 
               <motion.div
-                key={currentSlide}
+                key={`texto-${currentSlide}`}
                 initial={{
                   opacity: 0,
-                  y: 40,
+                  y: 30,
                 }}
                 animate={{
                   opacity: 1,
@@ -433,39 +428,27 @@ const Index = () => {
                 }}
                 exit={{
                   opacity: 0,
-                  y: -20,
+                  y: -15,
                 }}
                 transition={{
-                  duration: 0.8,
-                  delay: 0.3,
+                  duration: 0.6,
+                  delay: 0.15,
                 }}
                 className="max-w-2xl"
               >
 
                 <div className="w-16 h-1 bg-gold mb-6" />
 
-                <h1 className="text-4xl md:text-6xl font-black uppercase text-primary-foreground leading-tight mb-4">
-                  {
-                    slides[
-                      currentSlide
-                    ].title
-                  }
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase text-primary-foreground leading-tight mb-4">
+                  {slides[currentSlide].title}
                 </h1>
 
-                <p className="text-lg md:text-xl font-semibold text-gold uppercase tracking-wider mb-3">
-                  {
-                    slides[
-                      currentSlide
-                    ].subtitle
-                  }
+                <p className="text-sm sm:text-base md:text-lg font-semibold text-gold uppercase tracking-wider mb-3">
+                  {slides[currentSlide].subtitle}
                 </p>
 
-                <p className="text-primary-foreground/80 text-base md:text-lg max-w-lg">
-                  {
-                    slides[
-                      currentSlide
-                    ].description
-                  }
+                <p className="text-primary-foreground/80 text-sm md:text-base max-w-lg leading-relaxed">
+                  {slides[currentSlide].description}
                 </p>
 
               </motion.div>
@@ -476,7 +459,9 @@ const Index = () => {
 
         </div>
 
-        {/* CONTROLES DEL SLIDER */}
+        {/* =====================================================
+            CONTROLES DEL SLIDER
+        ===================================================== */}
 
         <div className="absolute bottom-10 left-0 right-0">
 
@@ -488,9 +473,11 @@ const Index = () => {
 
                 <button
                   key={i}
+                  type="button"
                   onClick={() =>
                     goToSlide(i)
                   }
+                  aria-label={`Ir al slide ${i + 1}`}
                   className={`h-1 rounded-full transition-all duration-300 ${
                     i === currentSlide
                       ? "w-12 bg-gold"
@@ -505,14 +492,18 @@ const Index = () => {
             <div className="flex gap-2">
 
               <button
+                type="button"
                 onClick={prevSlide}
+                aria-label="Slide anterior"
                 className="p-2 border border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 rounded transition-colors"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
 
               <button
+                type="button"
                 onClick={nextSlide}
+                aria-label="Slide siguiente"
                 className="p-2 border border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 rounded transition-colors"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -542,12 +533,12 @@ const Index = () => {
                 <Link
                   key={item.label}
                   to={item.path}
-                  className="py-5 px-4 text-center text-primary-foreground font-bold text-xs md:text-sm uppercase tracking-wider hover:bg-primary-foreground/10 transition-colors flex items-center justify-center gap-2"
+                  className="py-5 px-4 text-center text-primary-foreground font-bold text-[11px] sm:text-xs md:text-sm uppercase tracking-wider hover:bg-primary-foreground/10 transition-colors flex items-center justify-center gap-2"
                 >
 
                   {item.label}
 
-                  <ArrowRight className="h-3 w-3" />
+                  <ArrowRight className="h-3 w-3 flex-shrink-0" />
 
                 </Link>
 
@@ -572,15 +563,13 @@ const Index = () => {
 
             <div className="w-16 h-1 bg-secondary mx-auto mb-4" />
 
-            <h2 className="section-title text-foreground">
-              {contenido
-                ?.novedadesTitulo ||
+            <h2 className="text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-foreground">
+              {contenido?.novedadesTitulo ||
                 "Novedades"}
             </h2>
 
-            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              {contenido
-                ?.novedadesDescripcion ||
+            <p className="text-sm md:text-base text-muted-foreground mt-3 max-w-lg mx-auto leading-relaxed">
+              {contenido?.novedadesDescripcion ||
                 "Últimas noticias y actividades de la Quinta Compañía"}
             </p>
 
@@ -637,9 +626,7 @@ const Index = () => {
                           {item.categoria && (
 
                             <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                              {
-                                item.categoria
-                              }
+                              {item.categoria}
                             </span>
 
                           )}
@@ -695,12 +682,11 @@ const Index = () => {
 
             <Link
               to="/noticias"
-              className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground font-bold uppercase text-sm tracking-wider px-8 py-3 rounded-md hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground font-bold uppercase text-xs md:text-sm tracking-wider px-8 py-3 rounded-md hover:opacity-90 transition-opacity"
             >
 
-              {contenido
-                ?.novedadesBoton ||
-                "Ver Todas las Noticias"}
+              {contenido?.novedadesBoton ||
+                "Ver todas las noticias"}
 
               <ArrowRight className="h-4 w-4" />
 
@@ -726,15 +712,13 @@ const Index = () => {
 
               <div className="w-16 h-1 bg-gold mb-6" />
 
-              <h2 className="text-3xl md:text-4xl font-black uppercase text-navy-foreground leading-tight mb-4">
-                {contenido
-                  ?.redesTitulo ||
+              <h2 className="text-2xl md:text-3xl font-black uppercase text-navy-foreground leading-tight mb-4">
+                {contenido?.redesTitulo ||
                   "Síguenos en Redes Sociales"}
               </h2>
 
-              <p className="text-navy-foreground/70 mb-8 max-w-md">
-                {contenido
-                  ?.redesTexto ||
+              <p className="text-navy-foreground/70 text-sm md:text-base mb-8 max-w-md leading-relaxed">
+                {contenido?.redesTexto ||
                   "Mantente informado sobre nuestras actividades, entrenamientos y servicios a la comunidad de Coronel."}
               </p>
 
@@ -744,22 +728,16 @@ const Index = () => {
                   (social) => (
 
                     <a
-                      key={
-                        social.label
-                      }
-                      href={
-                        social.href
-                      }
+                      key={social.label}
+                      href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 bg-navy-foreground/10 text-navy-foreground hover:bg-gold hover:text-gold-foreground px-5 py-3 rounded-md font-bold text-sm uppercase tracking-wider transition-colors"
+                      className="flex items-center gap-2 bg-navy-foreground/10 text-navy-foreground hover:bg-gold hover:text-gold-foreground px-5 py-3 rounded-md font-bold text-xs md:text-sm uppercase tracking-wider transition-colors"
                     >
 
                       <social.icon className="h-5 w-5" />
 
-                      {
-                        social.label
-                      }
+                      {social.label}
 
                     </a>
 
@@ -770,7 +748,9 @@ const Index = () => {
 
             </div>
 
-            {/* FOTOGRAFÍAS CONTROLADAS POR SANITY */}
+            {/* =================================================
+                FOTOGRAFÍAS
+            ================================================= */}
 
             <div className="grid grid-cols-2 gap-3">
 
@@ -854,15 +834,13 @@ const Index = () => {
 
         <div className="container mx-auto px-4 text-center">
 
-          <h2 className="text-2xl md:text-3xl font-black uppercase text-secondary-foreground mb-3">
-            {contenido
-              ?.socioTitulo ||
+          <h2 className="text-xl md:text-2xl font-black uppercase text-secondary-foreground mb-3">
+            {contenido?.socioTitulo ||
               "¿Quieres apoyar a tu Quinta Compañía?"}
           </h2>
 
-          <p className="text-secondary-foreground/80 mb-6 max-w-lg mx-auto">
-            {contenido
-              ?.socioTexto ||
+          <p className="text-sm md:text-base text-secondary-foreground/80 mb-6 max-w-lg mx-auto leading-relaxed">
+            {contenido?.socioTexto ||
               "Hazte socio colaborador con un aporte mensual y ayúdanos a seguir sirviendo a Coronel."}
           </p>
 
@@ -873,11 +851,10 @@ const Index = () => {
             }
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block bg-navy text-navy-foreground font-bold uppercase text-sm tracking-wider px-10 py-4 rounded-md hover:opacity-90 transition-opacity"
+            className="inline-block bg-navy text-navy-foreground font-bold uppercase text-xs md:text-sm tracking-wider px-10 py-4 rounded-md hover:opacity-90 transition-opacity"
           >
 
-            {contenido
-              ?.socioBoton ||
+            {contenido?.socioBoton ||
               "Hazte Socio Ahora"}
 
           </a>
