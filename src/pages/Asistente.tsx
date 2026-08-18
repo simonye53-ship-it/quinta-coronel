@@ -1,8 +1,9 @@
-import {FormEvent, KeyboardEvent, useRef, useState} from "react";
+import {FormEvent, KeyboardEvent, useEffect, useRef, useState} from "react";
 import {
   ArrowUp,
   BookOpen,
   Bot,
+  ExternalLink,
   FileText,
   Loader2,
   MessageSquarePlus,
@@ -24,6 +25,8 @@ type Mensaje = {
   texto: string;
   fuentes?: Fuente[];
   error?: boolean;
+  preguntaOriginal?: string;
+  retryAt?: number;
 };
 
 type ChatResponse = {
@@ -31,6 +34,7 @@ type ChatResponse = {
   fuentes?: Fuente[];
   interactionId?: string;
   error?: string;
+  retryAfter?: number;
 };
 
 const manuales = [
@@ -39,12 +43,14 @@ const manuales = [
     autor: "Guía de Respuesta en Caso de Emergencia",
     descripcion:
       "Consulta inicial para incidentes con materiales peligrosos, números ONU y guías de respuesta.",
+    url: "/manuales/gre-2024.pdf",
   },
   {
     titulo: "Control de emergencias con gases combustibles",
     autor: "Academia Nacional de Bomberos de Chile",
     descripcion:
       "Material técnico sobre propiedades, riesgos y control de emergencias asociadas a gases combustibles.",
+    url: "/manuales/control-emergencias-gases-combustibles-anb-chile.pdf",
   },
 ];
 
@@ -64,7 +70,19 @@ const Asistente = () => {
   const [entrada, setEntrada] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [interactionId, setInteractionId] = useState<string | null>(null);
+  const [ahora, setAhora] = useState(Date.now());
   const endRef = useRef<HTMLDivElement>(null);
+
+  const hayCuentaRegresiva = mensajes.some(
+    (mensaje) => mensaje.retryAt && mensaje.retryAt > ahora,
+  );
+
+  useEffect(() => {
+    if (!hayCuentaRegresiva) return;
+
+    const timer = window.setInterval(() => setAhora(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [hayCuentaRegresiva]);
 
   const nuevaConversacion = () => {
     setMensajes([]);
@@ -72,17 +90,19 @@ const Asistente = () => {
     setEntrada("");
   };
 
-  const enviarPregunta = async (pregunta: string) => {
+  const enviarPregunta = async (pregunta: string, agregarMensajeUsuario = true) => {
     const texto = pregunta.trim();
 
     if (!texto || enviando) return;
 
     setEntrada("");
     setEnviando(true);
-    setMensajes((actuales) => [
-      ...actuales,
-      {id: crearId(), rol: "usuario", texto},
-    ]);
+    if (agregarMensajeUsuario) {
+      setMensajes((actuales) => [
+        ...actuales,
+        {id: crearId(), rol: "usuario", texto},
+      ]);
+    }
 
     window.setTimeout(() => endRef.current?.scrollIntoView({behavior: "smooth"}), 50);
 
@@ -93,9 +113,40 @@ const Asistente = () => {
         body: JSON.stringify({pregunta: texto, previousInteractionId: interactionId}),
       });
 
-      const data = (await response.json()) as ChatResponse;
+      let data: ChatResponse = {};
+
+      try {
+        data = (await response.json()) as ChatResponse;
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
+        if (response.status === 429) {
+          const retryHeader = Number(response.headers.get("Retry-After"));
+          const retryAfter = Number.isFinite(data.retryAfter)
+            ? Number(data.retryAfter)
+            : Number.isFinite(retryHeader) && retryHeader > 0
+              ? retryHeader
+              : 60;
+
+          setAhora(Date.now());
+          setMensajes((actuales) => [
+            ...actuales,
+            {
+              id: crearId(),
+              rol: "asistente",
+              texto:
+                data.error ||
+                "Alcanzaste temporalmente el límite de consultas. Podrás reintentar cuando termine la cuenta regresiva.",
+              error: true,
+              preguntaOriginal: texto,
+              retryAt: Date.now() + retryAfter * 1000,
+            },
+          ]);
+          return;
+        }
+
         throw new Error(data.error || "No fue posible consultar el asistente.");
       }
 
@@ -126,6 +177,13 @@ const Asistente = () => {
       setEnviando(false);
       window.setTimeout(() => endRef.current?.scrollIntoView({behavior: "smooth"}), 50);
     }
+  };
+
+  const reintentarPregunta = (mensaje: Mensaje) => {
+    if (!mensaje.preguntaOriginal || enviando) return;
+
+    setMensajes((actuales) => actuales.filter((actual) => actual.id !== mensaje.id));
+    void enviarPregunta(mensaje.preguntaOriginal, false);
   };
 
   const onSubmit = (event: FormEvent) => {
@@ -239,6 +297,26 @@ const Asistente = () => {
                         >
                           {mensaje.texto}
                         </div>
+                        {mensaje.error && mensaje.preguntaOriginal && mensaje.retryAt && (
+                          <button
+                            type="button"
+                            onClick={() => reintentarPregunta(mensaje)}
+                            disabled={mensaje.retryAt > ahora || enviando}
+                            className="mt-2 inline-flex items-center gap-2 rounded-md border border-secondary/25 bg-card px-3 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55"
+                          >
+                            {mensaje.retryAt > ahora ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5" />
+                                Reintentar en {Math.max(1, Math.ceil((mensaje.retryAt - ahora) / 1000))} s
+                              </>
+                            ) : (
+                              <>
+                                <ArrowUp className="h-3.5 w-3.5" />
+                                Reintentar consulta
+                              </>
+                            )}
+                          </button>
+                        )}
                         {!!mensaje.fuentes?.length && (
                           <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
                             <p className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-primary">
@@ -325,11 +403,21 @@ const Asistente = () => {
                   <span className="flex h-12 w-12 flex-none items-center justify-center rounded-md bg-navy text-gold">
                     <FileText className="h-6 w-6" />
                   </span>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-primary">Documento indexado</p>
                     <h3 className="font-extrabold leading-snug text-foreground">{manual.titulo}</h3>
                     <p className="mt-1 text-xs font-semibold text-muted-foreground">{manual.autor}</p>
                     <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{manual.descripcion}</p>
+                    <a
+                      href={manual.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      aria-label={`Abrir manual ${manual.titulo} en una nueva pestaña`}
+                    >
+                      Abrir manual
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                    </a>
                   </div>
                 </article>
               ))}

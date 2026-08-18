@@ -1,4 +1,5 @@
 import {GoogleGenAI} from "@google/genai";
+import {createHash} from "node:crypto";
 
 const STORE_PREDETERMINADO =
   "fileSearchStores/asistente-de-emergencias-bi-zkzggfh9zv74";
@@ -16,6 +17,51 @@ Si la pregunta es ambigua, solicita los antecedentes necesarios antes de respond
 Mantén el contexto de la conversación. Distingue las diferencias entre fuentes cuando existan.
 Organiza la respuesta de forma clara y práctica. No menciones procesos internos de recuperación documental.
 No sustituyes el mando, los procedimientos locales ni la evaluación del personal competente en la escena.`;
+
+const VENTANA_LIMITE_MS = 10 * 60 * 1000;
+const MAX_CONSULTAS_POR_VENTANA = 5;
+const registroConsultas = globalThis.__quintaRegistroConsultas || new Map();
+
+if (!globalThis.__quintaRegistroConsultas) {
+  globalThis.__quintaRegistroConsultas = registroConsultas;
+}
+
+const revisarLimiteVisitante = (request) => {
+  const forwardedFor = request.headers["x-forwarded-for"];
+  const identificador = Array.isArray(forwardedFor)
+    ? forwardedFor[0]
+    : forwardedFor?.split(",")[0]?.trim() || request.socket?.remoteAddress || "desconocido";
+  const claveVisitante = createHash("sha256").update(identificador).digest("hex");
+  const ahora = Date.now();
+
+  if (registroConsultas.size > 5000) {
+    for (const [clave, registro] of registroConsultas) {
+      if (ahora >= registro.reiniciaEn) registroConsultas.delete(clave);
+    }
+  }
+
+  const anterior = registroConsultas.get(claveVisitante);
+
+  if (!anterior || ahora >= anterior.reiniciaEn) {
+    const nuevo = {consultas: 1, reiniciaEn: ahora + VENTANA_LIMITE_MS};
+    registroConsultas.set(claveVisitante, nuevo);
+    return {permitida: true, restantes: MAX_CONSULTAS_POR_VENTANA - 1};
+  }
+
+  if (anterior.consultas >= MAX_CONSULTAS_POR_VENTANA) {
+    return {
+      permitida: false,
+      restantes: 0,
+      retryAfter: Math.max(1, Math.ceil((anterior.reiniciaEn - ahora) / 1000)),
+    };
+  }
+
+  anterior.consultas += 1;
+  return {
+    permitida: true,
+    restantes: MAX_CONSULTAS_POR_VENTANA - anterior.consultas,
+  };
+};
 
 const extraerFuentes = (interaction) => {
   const agrupadas = new Map();
@@ -73,10 +119,24 @@ export default async function handler(request, response) {
     });
   }
 
+  const limiteVisitante = revisarLimiteVisitante(request);
+
+  response.setHeader("X-RateLimit-Limit", String(MAX_CONSULTAS_POR_VENTANA));
+  response.setHeader("X-RateLimit-Remaining", String(limiteVisitante.restantes));
+
+  if (!limiteVisitante.permitida) {
+    response.setHeader("Retry-After", String(limiteVisitante.retryAfter));
+    return response.status(429).json({
+      tipo: "limite_visitante",
+      retryAfter: limiteVisitante.retryAfter,
+      error: `Alcanzaste el límite de ${MAX_CONSULTAS_POR_VENTANA} consultas por cada 10 minutos. Podrás volver a consultar cuando termine la cuenta regresiva.`,
+    });
+  }
+
   try {
     const ai = new GoogleGenAI({apiKey});
     const solicitud = {
-      model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
       input: pregunta,
       system_instruction: INSTRUCCIONES,
       tools: [
@@ -109,6 +169,8 @@ export default async function handler(request, response) {
       const retryAfter = obtenerRetryAfter(mensaje);
       response.setHeader("Retry-After", String(retryAfter));
       return response.status(429).json({
+        tipo: "limite_gemini",
+        retryAfter,
         error: `El asistente alcanzó temporalmente su límite de consultas. Intenta nuevamente en aproximadamente ${retryAfter} segundos.`,
       });
     }
