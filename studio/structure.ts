@@ -59,6 +59,15 @@ export const structure: StructureResolver = (S) =>
         ),
 
       S.listItem()
+        .title('Asistente IA')
+        .id('asistente')
+        .child(
+          S.document()
+            .schemaType('asistente')
+            .documentId('asistente')
+        ),
+
+      S.listItem()
         .title('Contacto')
         .id('contacto')
         .child(

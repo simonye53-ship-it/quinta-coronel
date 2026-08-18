@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import Layout from "@/components/Layout";
+import {sanityClient} from "@/lib/sanity";
 
 type Fuente = {
   nombre: string;
@@ -37,8 +38,29 @@ type ChatResponse = {
   retryAfter?: number;
 };
 
-const manuales = [
+type IdentificadorManual = "gre2024" | "gasesCombustibles";
+
+type Manual = {
+  identificador: IdentificadorManual;
+  titulo: string;
+  autor: string;
+  descripcion: string;
+  url: string;
+};
+
+type ContenidoAsistente = {
+  bibliotecaTitulo?: string;
+  bibliotecaDescripcion?: string;
+  manuales?: Array<{
+    _key: string;
+    identificador?: IdentificadorManual;
+    titulo?: string;
+  }>;
+};
+
+const manualesPredeterminados: Manual[] = [
   {
+    identificador: "gre2024",
     titulo: "GRE 2024",
     autor: "Guía de Respuesta en Caso de Emergencia",
     descripcion:
@@ -46,6 +68,7 @@ const manuales = [
     url: "/manuales/gre-2024.pdf",
   },
   {
+    identificador: "gasesCombustibles",
     titulo: "Control de emergencias con gases combustibles",
     autor: "Academia Nacional de Bomberos de Chile",
     descripcion:
@@ -53,6 +76,14 @@ const manuales = [
     url: "/manuales/control-emergencias-gases-combustibles-anb-chile.pdf",
   },
 ];
+
+const ASISTENTE_QUERY = /* groq */ `
+  *[_type == "asistente" && _id == "asistente"][0]{
+    bibliotecaTitulo,
+    bibliotecaDescripcion,
+    manuales[]{_key, identificador, titulo}
+  }
+`;
 
 const ejemplos = [
   "¿Qué indica la GRE para ONU 1203?",
@@ -71,7 +102,28 @@ const Asistente = () => {
   const [enviando, setEnviando] = useState(false);
   const [interactionId, setInteractionId] = useState<string | null>(null);
   const [ahora, setAhora] = useState(Date.now());
+  const [contenido, setContenido] = useState<ContenidoAsistente | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    sanityClient
+      .fetch<ContenidoAsistente | null>(ASISTENTE_QUERY)
+      .then(setContenido)
+      .catch((error) => {
+        console.error("Error cargando el contenido del asistente desde Sanity:", error);
+      });
+  }, []);
+
+  const titulosSanity = new Map(
+    contenido?.manuales
+      ?.filter((manual) => manual.identificador && manual.titulo)
+      .map((manual) => [manual.identificador as IdentificadorManual, manual.titulo as string]) ?? [],
+  );
+
+  const manuales = manualesPredeterminados.map((manual) => ({
+    ...manual,
+    titulo: titulosSanity.get(manual.identificador) || manual.titulo,
+  }));
 
   const hayCuentaRegresiva = mensajes.some(
     (mensaje) => mensaje.retryAt && mensaje.retryAt > ahora,
@@ -390,16 +442,17 @@ const Asistente = () => {
             <div className="mb-7">
               <div className="mb-3 h-1 w-14 bg-secondary" />
               <h2 id="biblioteca-title" className="section-title text-2xl md:text-3xl">
-                Biblioteca disponible
+                {contenido?.bibliotecaTitulo || "Biblioteca disponible"}
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Documentos actualmente indexados y disponibles para las consultas del asistente.
+                {contenido?.bibliotecaDescripcion ||
+                  "Documentos actualmente indexados y disponibles para las consultas del asistente."}
               </p>
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
               {manuales.map((manual) => (
-                <article key={manual.titulo} className="flex gap-4 rounded-lg border border-border bg-card p-5 shadow-sm">
+                <article key={manual.identificador} className="flex gap-4 rounded-lg border border-border bg-card p-5 shadow-sm">
                   <span className="flex h-12 w-12 flex-none items-center justify-center rounded-md bg-navy text-gold">
                     <FileText className="h-6 w-6" />
                   </span>

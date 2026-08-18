@@ -8,6 +8,7 @@ import {materialMayor} from './materialMayor'
 import {contacto} from './contacto'
 import {hazteSocio} from './haztesocio'
 import {noticia} from './noticia'
+import {asistente} from './asistente'
 
 export const schemaTypes = [
   inicio,
@@ -20,4 +21,5 @@ export const schemaTypes = [
   contacto,
   hazteSocio,
   noticia,
+  asistente,
 ]
