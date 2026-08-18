@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import {Link, useLocation} from "react-router-dom";
-import {Menu, X, ChevronDown} from "lucide-react";
+import {Menu, X, ChevronDown, Sparkles} from "lucide-react";
 import logoCircular from "@/assets/logo-circular.jpg";
 
 const menuItems = [
@@ -166,7 +166,24 @@ const Navbar = () => {
             MENÚ ESCRITORIO
         ===================================================== */}
 
-        <div className="hidden lg:flex items-center gap-1">
+        <div className="hidden lg:flex items-center">
+
+          <Link
+            to="/asistente"
+            className={`mr-4 inline-flex items-center gap-2 rounded-md border px-4 py-2 text-xs font-extrabold uppercase tracking-wider transition-all ${
+              isPathActive("/asistente")
+                ? "border-gold bg-gold text-gold-foreground shadow-[0_0_24px_hsl(var(--gold)/0.22)]"
+                : "border-primary/60 bg-primary/20 text-primary-foreground hover:border-gold/70 hover:bg-primary/35 hover:text-gold"
+            }`}
+            aria-label="Abrir Asistente IA"
+          >
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            Asistente IA
+          </Link>
+
+          <div className="h-7 w-px bg-primary-foreground/15 mr-3" aria-hidden="true" />
+
+          <div className="flex items-center gap-0">
 
           {menuItems.map((item) => {
 
@@ -258,6 +275,8 @@ const Navbar = () => {
             );
           })}
 
+          </div>
+
         </div>
 
         {/* =====================================================
@@ -295,6 +314,20 @@ const Navbar = () => {
         <div className="lg:hidden bg-navy border-t border-primary-foreground/10">
 
           <div className="container mx-auto px-4 py-4 space-y-1">
+
+            <Link
+              to="/asistente"
+              className={`mb-3 flex items-center gap-3 rounded-md border px-4 py-3 text-sm font-extrabold uppercase tracking-wider ${
+                isPathActive("/asistente")
+                  ? "border-gold bg-gold text-gold-foreground"
+                  : "border-primary/60 bg-primary/20 text-primary-foreground"
+              }`}
+            >
+              <Sparkles className="h-5 w-5" aria-hidden="true" />
+              Asistente IA
+            </Link>
+
+            <div className="h-px bg-primary-foreground/10 mb-3" aria-hidden="true" />
 
             {menuItems.map((item) => {
 

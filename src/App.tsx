@@ -15,6 +15,7 @@ import HazteSocio from "./pages/HazteSocio";
 import Noticias from "./pages/Noticias";
 import NoticiaDetalle from "./pages/NoticiaDetalle";
 import Contacto from "./pages/Contacto";
+import Asistente from "./pages/Asistente";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +77,11 @@ const App = () => (
           <Route
             path="/contacto"
             element={<Contacto />}
+          />
+
+          <Route
+            path="/asistente"
+            element={<Asistente />}
           />
 
           <Route
