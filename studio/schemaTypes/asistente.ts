@@ -10,7 +10,6 @@ const manualesDisponibles = [
   },
   {title: 'Extricación I', value: 'extricacionI'},
   {title: 'Fuego y tácticas', value: 'fuegoYTacticas'},
-  {title: 'Guía AHA para RCP y ACE', value: 'guiaAceRcp'},
   {title: 'Control de incendios forestales para Bomberos', value: 'incendiosForestales'},
   {title: 'Reanimación cardiopulmonar (RCP)', value: 'reanimacionCardiopulmonar'},
   {title: 'Rescate inclusivo', value: 'rescateInclusivo'},
@@ -44,18 +43,21 @@ export const asistente = defineType({
         _type: 'manualAsistente',
         identificador: 'gre2024',
         titulo: 'GRE 2024',
+        institucion: 'PHMSA / Transport Canada / SICT',
       },
       {
         _key: 'gases-combustibles-anb',
         _type: 'manualAsistente',
         identificador: 'gasesCombustibles',
         titulo: 'Control de emergencias con gases combustibles',
+        institucion: 'ANB',
       },
       {
         _key: 'control-fuego-vehiculos-anb',
         _type: 'manualAsistente',
         identificador: 'controlFuegoVehiculos',
         titulo: 'Control de fuego en vehículos',
+        institucion: 'ANB',
       },
     ],
   },
@@ -100,6 +102,14 @@ export const asistente = defineType({
               validation: (rule) => rule.required().max(140),
             }),
             defineField({
+              name: 'institucion',
+              title: 'Institución visible',
+              description:
+                'Etiqueta que reemplaza “Documento indexado”. Ejemplos: ANB, CTIF / Euro NCAP.',
+              type: 'string',
+              validation: (rule) => rule.max(60),
+            }),
+            defineField({
               name: 'portada',
               title: 'Portada o logo',
               description: 'Imagen que identifica este documento en la biblioteca del sitio.',
@@ -117,7 +127,17 @@ export const asistente = defineType({
             }),
           ],
           preview: {
-            select: {title: 'titulo', subtitle: 'identificador', media: 'portada'},
+            select: {
+              title: 'titulo',
+              institution: 'institucion',
+              identifier: 'identificador',
+              media: 'portada',
+            },
+            prepare: ({title, institution, identifier, media}) => ({
+              title,
+              subtitle: institution || identifier,
+              media,
+            }),
           },
         }),
       ],

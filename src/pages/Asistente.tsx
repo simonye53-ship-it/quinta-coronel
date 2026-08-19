@@ -62,7 +62,7 @@ type IdentificadorManual = string;
 type Manual = {
   identificador: string;
   titulo: string;
-  autor: string;
+  institucion: string;
   descripcion: string;
   url: string;
   portadaUrl?: string;
@@ -89,6 +89,7 @@ type ContenidoAsistente = {
     _key: string;
     identificador?: IdentificadorManual;
     titulo?: string;
+    institucion?: string;
     portada?: {
       asset?: {_ref?: string};
       alt?: string;
@@ -102,7 +103,7 @@ const manualesPredeterminados: Manual[] = [
   {
     identificador: "gre2024",
     titulo: "GRE 2024",
-    autor: "Guía de Respuesta en Caso de Emergencia",
+    institucion: "PHMSA / Transport Canada / SICT",
     descripcion:
       "Consulta inicial para incidentes con materiales peligrosos, números ONU y guías de respuesta.",
     url: "/manuales/gre-2024.pdf",
@@ -110,7 +111,7 @@ const manualesPredeterminados: Manual[] = [
   {
     identificador: "gasesCombustibles",
     titulo: "Control de emergencias con gases combustibles",
-    autor: "Academia Nacional de Bomberos de Chile",
+    institucion: "ANB",
     descripcion:
       "Material técnico sobre propiedades, riesgos y control de emergencias asociadas a gases combustibles.",
     url: "/manuales/control-emergencias-gases-combustibles-anb-chile.pdf",
@@ -125,6 +126,7 @@ const ASISTENTE_QUERY = /* groq */ `
       _key,
       identificador,
       titulo,
+      institucion,
       portada{asset, alt, hotspot, crop}
     }
   }
@@ -308,9 +310,7 @@ const Asistente = () => {
           .map((manual) => ({
           identificador: manual.cms_key || manual.slug,
           titulo: manual.title,
-          autor: manual.edition
-            ? `${manual.institution} · ${manual.edition}`
-            : manual.institution,
+          institucion: manual.institution,
           descripcion: manual.description,
           url: manual.file_url,
           portadaUrl: manual.cover_url || undefined,
@@ -341,6 +341,7 @@ const Asistente = () => {
     return {
       ...manual,
       titulo: contenidoManual?.titulo || manual.titulo,
+      institucion: contenidoManual?.institucion || manual.institucion,
       portada: contenidoManual?.portada,
     };
   });
@@ -713,9 +714,10 @@ const Asistente = () => {
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-primary">Documento indexado</p>
-                    <h3 className="font-extrabold leading-snug text-foreground">{manual.titulo}</h3>
-                    <p className="mt-1 text-xs font-semibold text-muted-foreground">{manual.autor}</p>
+                    <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-primary">
+                      {manual.institucion}
+                    </p>
+                    <h3 className="font-extrabold uppercase leading-snug text-foreground">{manual.titulo}</h3>
                     <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{manual.descripcion}</p>
                     <a
                       href={manual.url}
