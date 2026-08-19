@@ -1,5 +1,34 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 
+const manualesDisponibles = [
+  {title: 'GRE 2024', value: 'gre2024'},
+  {title: 'Control de emergencias con gases combustibles', value: 'gasesCombustibles'},
+  {title: 'Control de fuego en vehículos', value: 'controlFuegoVehiculos'},
+  {
+    title: 'Escalas y cuerdas para el control de incendios',
+    value: 'escalasCuerdasControlIncendios',
+  },
+  {title: 'Extricación I', value: 'extricacionI'},
+  {title: 'Fuego y tácticas', value: 'fuegoYTacticas'},
+  {title: 'Guía AHA para RCP y ACE', value: 'guiaAceRcp'},
+  {title: 'Control de incendios forestales para Bomberos', value: 'incendiosForestales'},
+  {title: 'Reanimación cardiopulmonar (RCP)', value: 'reanimacionCardiopulmonar'},
+  {title: 'Rescate inclusivo', value: 'rescateInclusivo'},
+  {title: 'Equipos de intervención rápida (RIT)', value: 'rescateIntervencionRapida'},
+  {
+    title: 'Rescate urbano pesado en estructuras colapsadas',
+    value: 'rescateUrbanoEstructurasColapsadas',
+  },
+  {title: 'Búsqueda y rescate urbano', value: 'rescateUrbano'},
+  {title: 'Riesgos eléctricos para Bomberos', value: 'riesgoElectrico'},
+  {title: 'Soporte vital básico', value: 'soporteVitalBasico'},
+  {
+    title: 'Supervivencia en incendios estructurales',
+    value: 'supervivenciaIncendiosEstructurales',
+  },
+  {title: 'Tácticas en incendios', value: 'tacticasIncendios'},
+]
+
 export const asistente = defineType({
   name: 'asistente',
   title: 'Asistente IA',
@@ -47,7 +76,7 @@ export const asistente = defineType({
       name: 'manuales',
       title: 'Títulos de los manuales',
       type: 'array',
-      validation: (rule) => rule.max(3).unique(),
+      validation: (rule) => rule.max(manualesDisponibles.length).unique(),
       of: [
         defineArrayMember({
           name: 'manualAsistente',
@@ -59,18 +88,7 @@ export const asistente = defineType({
               title: 'Documento',
               type: 'string',
               options: {
-                list: [
-                  {title: 'GRE 2024', value: 'gre2024'},
-                  {
-                    title: 'Control de emergencias con gases combustibles',
-                    value: 'gasesCombustibles',
-                  },
-                  {
-                    title: 'Control de fuego en vehículos',
-                    value: 'controlFuegoVehiculos',
-                  },
-                ],
-                layout: 'radio',
+                list: manualesDisponibles,
               },
               validation: (rule) => rule.required(),
             }),

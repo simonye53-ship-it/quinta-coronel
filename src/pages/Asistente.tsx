@@ -40,10 +40,7 @@ type ChatResponse = {
   retryAfter?: number;
 };
 
-type IdentificadorManual =
-  | "gre2024"
-  | "gasesCombustibles"
-  | "controlFuegoVehiculos";
+type IdentificadorManual = string;
 
 type Manual = {
   identificador: string;
