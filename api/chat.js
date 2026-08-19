@@ -18,7 +18,16 @@ No sustituyes el mando, los procedimientos locales ni la evaluación del persona
 const RESPUESTA_SIN_RESPALDO =
   "No encontré esta información en los manuales disponibles de la biblioteca técnica.";
 const RESPUESTA_VISUAL_NO_VALIDADA =
-  "Esta consulta requiere interpretar colores, símbolos o elementos visuales que todavía no han sido validados como evidencia operativa. No entregaré una indicación basándome solo en una inferencia de imagen.";
+  "No encontré una página visual disponible para revisar esta consulta. No entregaré una indicación operativa basándome solo en una inferencia sin evidencia visual.";
+const SOLICITUD_VALIDACION_VISUAL = `## Ayúdame a validar esta página
+
+Encontré una página relacionada con tu consulta. Debajo verás:
+
+- La **página original completa** del manual.
+- Una **lectura automática provisional** de sus colores, símbolos o diagramas.
+- Los botones **Correcto**, **Parcial**, **Incorrecto** y **No sé**.
+
+Compara la lectura automática con la página original y marca el resultado. Si eliges **Parcial** o **Incorrecto**, escribe la corrección técnica. La interpretación todavía no se usará como indicación operativa hasta reunir validaciones concordantes.`;
 
 const requiereValidacionVisual = (pregunta) =>
   /\b(color(?:es)?|s[ií]mbolo(?:s)?|imagen(?:es)?|flecha(?:s)?|zona(?:s)?\s+de\s+corte|d[oó]nde\s+cortar)\b/i
@@ -177,7 +186,7 @@ export default async function handler(request, response) {
       const {visual = null} = await visualResponse.json();
       return response.status(200).json({
         respuesta: visual
-          ? `${RESPUESTA_VISUAL_NO_VALIDADA}\n\nLa página relacionada se muestra abajo para revisión humana.`
+          ? SOLICITUD_VALIDACION_VISUAL
           : RESPUESTA_VISUAL_NO_VALIDADA,
         fuentes: visual ? [{nombre: visual.manual, paginas: [visual.pagina]}] : [],
         requiereValidacionVisual: true,
