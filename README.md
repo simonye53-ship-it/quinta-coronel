@@ -71,8 +71,13 @@ Sanity se utilizará únicamente como CMS para textos, títulos, fotografías, p
 - Gemini recibe solamente la pregunta y la evidencia recuperada; no almacena ni busca los manuales.
 - El backend rechaza respuestas sin evidencia y entrega al frontend las fuentes y páginas recuperadas.
 
-Los PDF sin capa de texto no se indexan automáticamente como si estuvieran vacíos. Quedan
-identificados como pendientes de OCR para una etapa de extracción visual controlada.
+El indexador conserva el texto nativo de las páginas legibles y aplica OCR en español a las
+páginas escaneadas o sin una capa de texto confiable. El OCR también recupera rótulos
+rasterizados dentro de tablas y diagramas.
+
+El OCR no interpreta por sí solo el significado de colores, flechas, zonas de corte o
+fotografías. Esas relaciones visuales no se incorporan automáticamente como hechos
+operativos: deben pasar por análisis multimodal y revisión antes de habilitarse para el chatbot.
 
 ## Estado actual
 

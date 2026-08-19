@@ -40,6 +40,15 @@ El índice semántico usa el binding `VECTORIZE` sobre `veronica-manuales` y el 
 con `@cf/baai/bge-m3`. Las rutas administrativas de indexación requieren el secreto
 `ADMIN_TOKEN`; nunca debe almacenarse en Git ni exponerse al frontend.
 
+### OCR controlado
+
+`scripts/indexar-vectorize.py` admite `--ocr missing` para completar únicamente páginas sin
+texto confiable y `--ocr all` para auditar todas las páginas de un documento. El trabajo
+temporal y la caché reanudable se guardan en `.ocr-work/`, fuera de Git.
+
+El OCR transcribe texto visible, pero una descripción inferida de fotografías, colores o
+diagramas no se considera evidencia documental aprobada hasta una revisión humana.
+
 En `ALLOWED_ORIGINS` deben incluirse el localhost de desarrollo y el dominio definitivo de Vercel, separados por comas.
 
 ## Desarrollo local

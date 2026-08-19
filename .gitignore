@@ -26,4 +26,6 @@ dist-ssr
 .vercel
 .wrangler
 .wrangler-config
+.ocr-tools
+.ocr-work
 .env*

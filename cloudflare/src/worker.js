@@ -56,6 +56,13 @@ const autorizadoComoAdministrador = (request, env) => {
   return esperado.length >= 32 && recibido === `Bearer ${esperado}`;
 };
 
+const detectarAlcanceManual = (pregunta) => {
+  if (/\b(rescue\s*sheets?|hojas?\s+de\s+rescate)\b/i.test(pregunta)) {
+    return "guia-uso-rescue-sheets";
+  }
+  return null;
+};
+
 const dividirEnLotes = (valores, tamano) => {
   const lotes = [];
   for (let indice = 0; indice < valores.length; indice += tamano) {
@@ -136,14 +143,13 @@ const obtenerFragmentosPorIds = async (env, ids) => {
 const buscarFragmentos = async (url, env) => {
   const pregunta = url.searchParams.get("q")?.trim() || "";
   const query = consultaFts(pregunta);
+  const alcanceManual = detectarAlcanceManual(pregunta);
 
   if (!query) {
     return respuestaJson({error: "La búsqueda necesita al menos un término válido."}, 400);
   }
 
-  const [embedding, lexical] = await Promise.all([
-    env.AI.run("@cf/baai/bge-m3", {text: pregunta, truncate_inputs: true}),
-    env.DB.prepare(`
+  const consultaLexical = env.DB.prepare(`
     SELECT c.id, c.manual_id, c.page_start, c.page_end, c.heading, c.content,
            m.slug, m.title, m.institution, m.edition,
            bm25(manual_chunks_fts, 4.0, 1.0, 0.0) AS score
@@ -151,9 +157,14 @@ const buscarFragmentos = async (url, env) => {
     JOIN manual_chunks AS c ON c.id = manual_chunks_fts.rowid
     JOIN manuals AS m ON m.id = c.manual_id
     WHERE manual_chunks_fts MATCH ?1 AND m.status = 'active'
+      ${alcanceManual ? "AND c.manual_id = ?2" : ""}
     ORDER BY score
     LIMIT 8
-  `).bind(query).all(),
+  `).bind(...(alcanceManual ? [query, alcanceManual] : [query]));
+
+  const [embedding, lexical] = await Promise.all([
+    env.AI.run("@cf/baai/bge-m3", {text: pregunta, truncate_inputs: true}),
+    consultaLexical.all(),
   ]);
 
   const vectorPregunta = embedding?.data?.[0];
@@ -162,6 +173,7 @@ const buscarFragmentos = async (url, env) => {
         topK: 12,
         returnValues: false,
         returnMetadata: "all",
+        ...(alcanceManual ? {filter: {manual_id: alcanceManual}} : {}),
       })
     : {matches: []};
 
@@ -224,7 +236,7 @@ const reiniciarIndiceManual = async (request, env, manualId) => {
     "SELECT id FROM manual_chunks WHERE manual_id = ?1",
   ).bind(manualId).all();
   const ids = results.map((fila) => String(fila.id));
-  for (const lote of dividirEnLotes(ids, 1000)) {
+  for (const lote of dividirEnLotes(ids, 100)) {
     if (lote.length) await env.VECTORIZE.deleteByIds(lote);
   }
   await env.DB.prepare("DELETE FROM manual_chunks WHERE manual_id = ?1").bind(manualId).run();

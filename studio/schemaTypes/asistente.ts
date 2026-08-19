@@ -27,6 +27,7 @@ const manualesDisponibles = [
     value: 'supervivenciaIncendiosEstructurales',
   },
   {title: 'Tácticas en incendios', value: 'tacticasIncendios'},
+  {title: 'Guía de uso de hojas de rescate (Rescue Sheets)', value: 'guiaUsoRescueSheets'},
 ]
 
 export const asistente = defineType({

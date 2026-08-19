@@ -17,6 +17,16 @@ No sustituyes el mando, los procedimientos locales ni la evaluación del persona
 
 const RESPUESTA_SIN_RESPALDO =
   "No encontré esta información en los manuales disponibles de la biblioteca técnica.";
+const RESPUESTA_VISUAL_NO_VALIDADA =
+  "Esta consulta requiere interpretar colores, símbolos o elementos visuales que todavía no han sido validados como evidencia operativa. No entregaré una indicación basándome solo en una inferencia de imagen.";
+
+const requiereValidacionVisual = (pregunta) =>
+  /\b(color(?:es)?|s[ií]mbolo(?:s)?|imagen(?:es)?|flecha(?:s)?|zona(?:s)?\s+de\s+corte|d[oó]nde\s+cortar)\b/i
+    .test(pregunta);
+
+const limpiarMarcadoresEvidencia = (texto) => texto
+  .replace(/\s*\[(?:EVIDENCIA|FUENTE)\s+\d+(?:\s*,\s*(?:EVIDENCIA|FUENTE)?\s*\d+)*\]/gi, "")
+  .trim();
 
 const normalizarConsultaDocumental = (pregunta) => pregunta
   .replace(/boca\s+abajo/gi, "decúbito prono")
@@ -143,6 +153,14 @@ export default async function handler(request, response) {
     });
   }
 
+  if (requiereValidacionVisual(pregunta)) {
+    return response.status(200).json({
+      respuesta: RESPUESTA_VISUAL_NO_VALIDADA,
+      fuentes: [],
+      requiereValidacionVisual: true,
+    });
+  }
+
   const limiteVisitante = revisarLimiteVisitante(request);
 
   response.setHeader("X-RateLimit-Limit", String(MAX_CONSULTAS_POR_VENTANA));
@@ -204,7 +222,7 @@ export default async function handler(request, response) {
     // El prompt guía al modelo, pero esta validación impide que una respuesta sin
     // evidencia documental llegue al usuario aunque el modelo use conocimiento general.
     const respuestaConRespaldo = fragmentos.length > 0
-      ? interaction.output_text || RESPUESTA_SIN_RESPALDO
+      ? limpiarMarcadoresEvidencia(interaction.output_text || RESPUESTA_SIN_RESPALDO)
       : RESPUESTA_SIN_RESPALDO;
 
     return response.status(200).json({

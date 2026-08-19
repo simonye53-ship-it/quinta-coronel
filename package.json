@@ -12,6 +12,7 @@
     "cf:migrate:local": "wrangler d1 migrations apply veronica-biblioteca --local --config cloudflare/wrangler.toml",
     "cf:migrate:remote": "wrangler d1 migrations apply veronica-biblioteca --remote --config cloudflare/wrangler.toml",
     "cf:index": "python scripts/indexar-vectorize.py",
+    "cf:ocr": "python scripts/indexar-vectorize.py --ocr missing",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
