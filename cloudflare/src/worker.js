@@ -112,7 +112,7 @@ const serializarRescueSheet = async (request, env, sheet) => {
       number: page.page_number,
       width: page.width,
       height: page.height,
-      image_url: `${base}/rescue-sheets/${encodeURIComponent(sheet.slug)}/paginas/${page.page_number}`,
+      image_url: `${base}/rescue-sheets/${encodeURIComponent(sheet.slug)}/paginas/${page.page_number}?v=${encodeURIComponent(sheet.version)}`,
     })),
   };
 };
