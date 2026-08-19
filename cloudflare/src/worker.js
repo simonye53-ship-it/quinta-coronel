@@ -23,7 +23,7 @@ const encabezadosCors = (request, env) => {
   return origin
     ? {
         "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
         Vary: "Origin",
       }
@@ -299,6 +299,245 @@ const indexarFragmentos = async (request, env) => {
   return {manualId, indexados: limpios.length};
 };
 
+const registrarActivosVisuales = async (request, env) => {
+  if (!autorizadoComoAdministrador(request, env)) {
+    return respuestaJson({error: "No autorizado."}, 401);
+  }
+
+  const cuerpo = await request.json();
+  const activos = Array.isArray(cuerpo.activos) ? cuerpo.activos : [];
+  if (!activos.length || activos.length > 50) {
+    return respuestaJson({error: "Lote visual inválido."}, 400);
+  }
+
+  const limpios = activos.map((activo) => ({
+    id: String(activo.id || "").slice(0, 180),
+    manualId: String(activo.manualId || "").slice(0, 120),
+    pageNumber: Number(activo.pageNumber),
+    r2Key: String(activo.r2Key || "").slice(0, 500),
+    sha256: String(activo.sha256 || "").slice(0, 64),
+    width: Number(activo.width),
+    height: Number(activo.height),
+    ocrText: String(activo.ocrText || "").slice(0, 20000),
+  }));
+  if (limpios.some((item) => (
+    !item.id || !item.manualId || !item.r2Key || item.sha256.length !== 64 ||
+    item.pageNumber < 1 || item.width < 1 || item.height < 1
+  ))) {
+    return respuestaJson({error: "Metadatos visuales inválidos."}, 400);
+  }
+
+  await env.DB.batch(limpios.map((item) => env.DB.prepare(`
+    INSERT INTO visual_assets
+      (id, manual_id, page_number, r2_key, sha256, width, height, ocr_text)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+    ON CONFLICT(id) DO UPDATE SET
+      r2_key = excluded.r2_key,
+      sha256 = excluded.sha256,
+      width = excluded.width,
+      height = excluded.height,
+      ocr_text = excluded.ocr_text,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    item.id, item.manualId, item.pageNumber, item.r2Key, item.sha256,
+    item.width, item.height, item.ocrText,
+  )));
+  return {registrados: limpios.length};
+};
+
+const subirImagenVisual = async (request, env, id) => {
+  if (!autorizadoComoAdministrador(request, env)) {
+    return respuestaJson({error: "No autorizado."}, 401);
+  }
+
+  const url = new URL(request.url);
+  const manualId = String(url.searchParams.get("manualId") || "").slice(0, 120);
+  const pageNumber = Number(url.searchParams.get("pageNumber"));
+  const width = Number(url.searchParams.get("width"));
+  const height = Number(url.searchParams.get("height"));
+  const sha256 = String(url.searchParams.get("sha256") || "").slice(0, 64);
+  if (
+    !id || !manualId || pageNumber < 1 || width < 1 || height < 1 ||
+    !/^[a-f0-9]{64}$/i.test(sha256) || request.headers.get("Content-Type") !== "image/jpeg"
+  ) {
+    return respuestaJson({error: "Datos de imagen visual inválidos."}, 400);
+  }
+
+  const imagen = await request.arrayBuffer();
+  if (!imagen.byteLength || imagen.byteLength > 8 * 1024 * 1024) {
+    return respuestaJson({error: "La imagen debe pesar entre 1 byte y 8 MB."}, 400);
+  }
+
+  const manual = await env.DB.prepare(
+    "SELECT id FROM manuals WHERE id = ?1 AND status = 'active'",
+  ).bind(manualId).first();
+  if (!manual) return respuestaJson({error: "Manual no encontrado."}, 404);
+
+  const r2Key = `visuales/${manualId}/pagina-${String(pageNumber).padStart(4, "0")}.jpg`;
+  await env.BIBLIOTECA.put(r2Key, imagen, {
+    httpMetadata: {contentType: "image/jpeg"},
+    customMetadata: {manualId, pageNumber: String(pageNumber), sha256},
+  });
+  await env.DB.prepare(`
+    INSERT INTO visual_assets
+      (id, manual_id, page_number, r2_key, sha256, width, height)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+    ON CONFLICT(id) DO UPDATE SET
+      r2_key = excluded.r2_key,
+      sha256 = excluded.sha256,
+      width = excluded.width,
+      height = excluded.height,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(id, manualId, pageNumber, r2Key, sha256, width, height).run();
+
+  return {id, manualId, pageNumber, r2Key, bytes: imagen.byteLength};
+};
+
+const obtenerActivoVisual = (env, id) => env.DB.prepare(`
+  SELECT v.*, m.title, m.institution, m.edition
+  FROM visual_assets AS v
+  JOIN manuals AS m ON m.id = v.manual_id
+  WHERE v.id = ?1 AND m.status = 'active'
+`).bind(id).first();
+
+const analizarActivoVisual = async (env, activo) => {
+  if (activo.analysis && activo.status !== "unprocessed") return activo;
+  const objeto = await env.BIBLIOTECA.get(activo.r2_key);
+  if (!objeto) throw new Error("La imagen visual no existe en R2.");
+  const convertido = await env.AI.toMarkdown(
+    {
+      name: `${activo.id}.jpg`,
+      blob: new Blob([await objeto.arrayBuffer()], {type: "image/jpeg"}),
+    },
+    {conversionOptions: {image: {descriptionLanguage: "es"}}},
+  );
+  const resultado = Array.isArray(convertido) ? convertido[0] : convertido;
+  if (!resultado?.data || resultado.format === "error") {
+    throw new Error(resultado?.error || "El análisis visual no produjo contenido.");
+  }
+  const analisis = String(resultado.data).slice(0, 20000);
+  await env.DB.prepare(`
+    UPDATE visual_assets
+    SET analysis = ?2, analysis_model = 'workers-ai-to-markdown',
+        status = 'pending', updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?1
+  `).bind(activo.id, analisis).run();
+  return {...activo, analysis: analisis, analysis_model: "workers-ai-to-markdown", status: "pending"};
+};
+
+const serializarActivoVisual = (request, activo, conteos = {}) => ({
+  id: activo.id,
+  manualId: activo.manual_id,
+  manual: activo.title,
+  institucion: activo.institution,
+  edicion: activo.edition,
+  pagina: activo.page_number,
+  imagenUrl: `${new URL(request.url).origin}/visuales/${encodeURIComponent(activo.id)}/imagen`,
+  ocr: activo.ocr_text,
+  analisis: activo.analysis,
+  estado: activo.status,
+  validaciones: {
+    correctas: Number(conteos.correctas || 0),
+    parciales: Number(conteos.parciales || 0),
+    incorrectas: Number(conteos.incorrectas || 0),
+    desconocidas: Number(conteos.desconocidas || 0),
+  },
+});
+
+const sugerirActivoVisual = async (request, env) => {
+  const url = new URL(request.url);
+  const pregunta = url.searchParams.get("q")?.trim() || "";
+  if (!pregunta) return respuestaJson({error: "Falta la consulta."}, 400);
+
+  const busqueda = await buscarFragmentos(url, env);
+  let activo = null;
+  if (!(busqueda instanceof Response)) {
+    for (const fragmento of busqueda.results || []) {
+      activo = await env.DB.prepare(`
+        SELECT v.*, m.title, m.institution, m.edition
+        FROM visual_assets AS v
+        JOIN manuals AS m ON m.id = v.manual_id
+        WHERE v.manual_id = ?1 AND v.page_number BETWEEN ?2 AND ?3
+        ORDER BY CASE v.status WHEN 'unprocessed' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END
+        LIMIT 1
+      `).bind(fragmento.manual_id, fragmento.page_start, fragmento.page_end).first();
+      if (activo) break;
+    }
+  }
+  if (!activo) {
+    activo = await env.DB.prepare(`
+      SELECT v.*, m.title, m.institution, m.edition
+      FROM visual_assets AS v
+      JOIN manuals AS m ON m.id = v.manual_id
+      WHERE m.status = 'active'
+      ORDER BY CASE v.status WHEN 'unprocessed' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END,
+               v.updated_at, v.manual_id, v.page_number
+      LIMIT 1
+    `).first();
+  }
+  if (!activo) return respuestaJson({visual: null});
+  activo = await analizarActivoVisual(env, activo);
+  const conteos = await env.DB.prepare(`
+    SELECT
+      SUM(verdict = 'correct') AS correctas,
+      SUM(verdict = 'partial') AS parciales,
+      SUM(verdict = 'incorrect') AS incorrectas,
+      SUM(verdict = 'unknown') AS desconocidas
+    FROM visual_validations WHERE asset_id = ?1
+  `).bind(activo.id).first();
+  return {visual: serializarActivoVisual(request, activo, conteos)};
+};
+
+const guardarValidacionVisual = async (request, env, id) => {
+  const activo = await obtenerActivoVisual(env, id);
+  if (!activo) return respuestaJson({error: "Activo visual no encontrado."}, 404);
+  const cuerpo = await request.json();
+  const reviewerId = String(cuerpo.reviewerId || "").trim().slice(0, 100);
+  const verdict = String(cuerpo.verdict || "");
+  const correction = String(cuerpo.correction || "").trim().slice(0, 3000);
+  const questionContext = String(cuerpo.questionContext || "").trim().slice(0, 1000);
+  if (reviewerId.length < 8 || !["correct", "partial", "incorrect", "unknown"].includes(verdict)) {
+    return respuestaJson({error: "Validación inválida."}, 400);
+  }
+  if (["partial", "incorrect"].includes(verdict) && correction.length < 5) {
+    return respuestaJson({error: "Describe brevemente la corrección."}, 400);
+  }
+
+  await env.DB.prepare(`
+    INSERT INTO visual_validations
+      (asset_id, reviewer_id, verdict, correction, question_context)
+    VALUES (?1, ?2, ?3, ?4, ?5)
+    ON CONFLICT(asset_id, reviewer_id) DO UPDATE SET
+      verdict = excluded.verdict,
+      correction = excluded.correction,
+      question_context = excluded.question_context,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(id, reviewerId, verdict, correction, questionContext).run();
+
+  const conteos = await env.DB.prepare(`
+    SELECT
+      SUM(verdict = 'correct') AS correctas,
+      SUM(verdict = 'partial') AS parciales,
+      SUM(verdict = 'incorrect') AS incorrectas,
+      SUM(verdict = 'unknown') AS desconocidas
+    FROM visual_validations WHERE asset_id = ?1
+  `).bind(id).first();
+  const correctas = Number(conteos.correctas || 0);
+  const parciales = Number(conteos.parciales || 0);
+  const incorrectas = Number(conteos.incorrectas || 0);
+  const estado = incorrectas > 0 && (correctas > 0 || parciales > 0)
+    ? "conflict"
+    : incorrectas >= 2 && correctas === 0 && parciales === 0
+      ? "rejected"
+      : correctas >= 2 && parciales === 0 && incorrectas === 0
+        ? "supported"
+        : "pending";
+  await env.DB.prepare(`
+    UPDATE visual_assets SET status = ?2, updated_at = CURRENT_TIMESTAMP WHERE id = ?1
+  `).bind(id, estado).run();
+  return {estado, validaciones: conteos};
+};
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -321,6 +560,26 @@ export default {
         return respuestaJson(await indexarFragmentos(request, env));
       }
 
+      if (request.method === "POST" && url.pathname === "/admin/visuales") {
+        return respuestaJson(await registrarActivosVisuales(request, env));
+      }
+
+      const cargaVisual = url.pathname.match(/^\/admin\/visuales\/([^/]+)\/imagen$/);
+      if (request.method === "POST" && cargaVisual) {
+        return respuestaJson(
+          await subirImagenVisual(request, env, decodeURIComponent(cargaVisual[1])),
+        );
+      }
+
+      const validacionVisual = url.pathname.match(/^\/visuales\/([^/]+)\/validaciones$/);
+      if (request.method === "POST" && validacionVisual) {
+        return respuestaJson(
+          await guardarValidacionVisual(request, env, decodeURIComponent(validacionVisual[1])),
+          200,
+          cors,
+        );
+      }
+
       if (request.method !== "GET") {
         return respuestaJson({error: "Método no permitido."}, 405, cors);
       }
@@ -335,6 +594,23 @@ export default {
 
       if (url.pathname === "/buscar") {
         return respuestaJson(await buscarFragmentos(url, env), 200, cors);
+      }
+
+      if (url.pathname === "/visuales/sugerir") {
+        return respuestaJson(await sugerirActivoVisual(request, env), 200, cors);
+      }
+
+      const imagenVisual = url.pathname.match(/^\/visuales\/([^/]+)\/imagen$/);
+      if (imagenVisual) {
+        const activo = await obtenerActivoVisual(env, decodeURIComponent(imagenVisual[1]));
+        if (!activo) return respuestaJson({error: "Activo visual no encontrado."}, 404, cors);
+        const objeto = await env.BIBLIOTECA.get(activo.r2_key);
+        if (!objeto) return respuestaJson({error: "Imagen no encontrada."}, 404, cors);
+        const headers = new Headers(cors);
+        objeto.writeHttpMetadata(headers);
+        headers.set("ETag", objeto.httpEtag);
+        headers.set("Cache-Control", "public, max-age=86400, immutable");
+        return new Response(objeto.body, {headers});
       }
 
       const recurso = url.pathname.match(/^\/manuales\/([^/]+)\/(archivo|portada)$/);

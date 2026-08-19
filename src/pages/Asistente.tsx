@@ -22,6 +22,21 @@ type Fuente = {
   paginas: number[];
 };
 
+type ValidacionVisual = {
+  id: string;
+  manual: string;
+  pagina: number;
+  imagenUrl: string;
+  analisis: string;
+  estado: "unprocessed" | "pending" | "supported" | "conflict" | "rejected";
+  validaciones: {
+    correctas: number;
+    parciales: number;
+    incorrectas: number;
+    desconocidas: number;
+  };
+};
+
 type Mensaje = {
   id: string;
   rol: "usuario" | "asistente";
@@ -30,6 +45,7 @@ type Mensaje = {
   error?: boolean;
   preguntaOriginal?: string;
   retryAt?: number;
+  validacionVisual?: ValidacionVisual | null;
 };
 
 type ChatResponse = {
@@ -38,6 +54,7 @@ type ChatResponse = {
   interactionId?: string;
   error?: string;
   retryAfter?: number;
+  validacionVisual?: ValidacionVisual | null;
 };
 
 type IdentificadorManual = string;
@@ -162,6 +179,94 @@ const RespuestaMarkdown = ({contenido}: {contenido: string}) => (
     {contenido}
   </ReactMarkdown>
 );
+
+const obtenerRevisorId = () => {
+  const clave = "veronica-visual-reviewer-id";
+  const existente = window.localStorage.getItem(clave);
+  if (existente) return existente;
+  const nuevo = crearId();
+  window.localStorage.setItem(clave, nuevo);
+  return nuevo;
+};
+
+const ValidacionVisualCard = ({visual, pregunta}: {visual: ValidacionVisual; pregunta: string}) => {
+  const [veredicto, setVeredicto] = useState("");
+  const [correccion, setCorreccion] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [resultado, setResultado] = useState<{error?: string; confirmacion?: string}>({});
+
+  const validar = async (valor: "correct" | "partial" | "incorrect" | "unknown") => {
+    setVeredicto(valor);
+    setResultado({});
+    if (["partial", "incorrect"].includes(valor) && correccion.trim().length < 5) {
+      setResultado({error: "Escribe primero una corrección breve."});
+      return;
+    }
+    setGuardando(true);
+    try {
+      const response = await fetch(`${BIBLIOTECA_API_URL}/visuales/${encodeURIComponent(visual.id)}/validaciones`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          reviewerId: obtenerRevisorId(),
+          verdict: valor,
+          correction: correccion.trim(),
+          questionContext: pregunta,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo guardar la validación.");
+      setResultado({confirmacion: "Validación guardada. Gracias por comprobar este contenido."});
+    } catch (error) {
+      setResultado({error: error instanceof Error ? error.message : "No se pudo guardar la validación."});
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <aside className="mt-3 overflow-hidden rounded-lg border border-amber-500/30 bg-amber-50/50" aria-label="Validación visual provisional">
+      <div className="border-b border-amber-500/20 px-4 py-3">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-amber-800">Dataset visual · revisión humana necesaria</p>
+        <p className="mt-1 text-xs text-muted-foreground">{visual.manual} · página {visual.pagina}</p>
+      </div>
+      <a href={visual.imagenUrl} target="_blank" rel="noopener noreferrer" className="block bg-white">
+        <img src={visual.imagenUrl} alt={`Página ${visual.pagina} de ${visual.manual}`} loading="lazy" className="mx-auto max-h-[34rem] w-full object-contain" />
+      </a>
+      <div className="space-y-3 px-4 py-4">
+        <div>
+          <p className="text-xs font-bold text-foreground">Lectura automática provisional</p>
+          <div className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
+            {visual.analisis || "Esta página todavía no tiene una descripción automática."}
+          </div>
+        </div>
+        <textarea
+          value={correccion}
+          onChange={(event) => setCorreccion(event.target.value)}
+          rows={2}
+          maxLength={3000}
+          placeholder="Si está parcial o incorrecto, indica qué color, símbolo o relación debe corregirse."
+          className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+        <div className="flex flex-wrap gap-2">
+          {([
+            ["correct", "Correcto"],
+            ["partial", "Parcial"],
+            ["incorrect", "Incorrecto"],
+            ["unknown", "No sé"],
+          ] as const).map(([valor, etiqueta]) => (
+            <button key={valor} type="button" disabled={guardando} onClick={() => void validar(valor)} className={`rounded-md border px-3 py-2 text-xs font-bold transition-colors disabled:opacity-50 ${veredicto === valor ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-primary/50"}`}>
+              {etiqueta}
+            </button>
+          ))}
+        </div>
+        {resultado.error && <p className="text-xs font-semibold text-destructive">{resultado.error}</p>}
+        {resultado.confirmacion && <p className="text-xs font-semibold text-emerald-700">{resultado.confirmacion}</p>}
+        <p className="text-[11px] leading-relaxed text-muted-foreground">Esta descripción no se usa como instrucción operativa hasta reunir validaciones concordantes.</p>
+      </div>
+    </aside>
+  );
+};
 
 const Asistente = () => {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
@@ -311,6 +416,8 @@ const Asistente = () => {
           rol: "asistente",
           texto: data.respuesta || "No se recibió una respuesta.",
           fuentes: data.fuentes || [],
+          preguntaOriginal: texto,
+          validacionVisual: data.validacionVisual,
         },
       ]);
       setInteractionId(data.interactionId || null);
@@ -500,6 +607,12 @@ const Asistente = () => {
                               ))}
                             </div>
                           </aside>
+                        )}
+                        {mensaje.validacionVisual && (
+                          <ValidacionVisualCard
+                            visual={mensaje.validacionVisual}
+                            pregunta={mensaje.preguntaOriginal || ""}
+                          />
                         )}
                       </div>
                       {mensaje.rol === "usuario" && (

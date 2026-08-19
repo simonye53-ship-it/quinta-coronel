@@ -64,7 +64,11 @@ Sanity se utilizará únicamente como CMS para textos, títulos, fotografías, p
 ## Arquitectura documental actual
 
 - Cloudflare R2 conserva los PDF.
+- Cloudflare R2 conserva además una imagen JPEG por página para preservar fotografías,
+  colores, diagramas y símbolos sin separarlos de su contexto.
 - Cloudflare D1 conserva el catálogo y los fragmentos asociados a páginas.
+- D1 relaciona cada activo visual con manual, página, hash, análisis provisional y
+  validaciones humanas independientes.
 - Cloudflare Vectorize recupera fragmentos por similitud semántica.
 - FTS5 en D1 refuerza números, códigos y coincidencias textuales exactas.
 - Workers AI genera embeddings multilingües con BGE-M3.
@@ -78,6 +82,26 @@ rasterizados dentro de tablas y diagramas.
 El OCR no interpreta por sí solo el significado de colores, flechas, zonas de corte o
 fotografías. Esas relaciones visuales no se incorporan automáticamente como hechos
 operativos: deben pasar por análisis multimodal y revisión antes de habilitarse para el chatbot.
+
+### Dataset visual
+
+El dataset visual inicial contiene 2.511 páginas pertenecientes a 18 documentos. La imagen
+completa de la página es la evidencia primaria. Workers AI genera una descripción solo cuando
+una consulta visual recupera esa página; se almacena como `pending` y se muestra junto a la
+imagen para revisión humana. Dos revisiones concordantes pueden marcarla como `supported`;
+los desacuerdos quedan como `conflict` y dos rechazos concordantes como `rejected`.
+
+La carga es reproducible y puede limitarse a un manual o reanudarse desde uno determinado:
+
+```powershell
+npm run cf:visuales -- --directory "C:\ruta\a\los\manuales"
+npm run cf:visuales -- --directory "C:\ruta\a\los\manuales" --manual guia-uso-rescue-sheets
+npm run cf:visuales -- --directory "C:\ruta\a\los\manuales" --start-at rescate-inclusivo
+```
+
+La variable `VERONICA_ADMIN_TOKEN` debe coincidir con el secreto `ADMIN_TOKEN` del Worker.
+Los archivos renderizados son temporales y se eliminan automáticamente al terminar cada
+manual; no se guardan dentro del repositorio.
 
 ## Estado actual
 

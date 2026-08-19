@@ -153,14 +153,6 @@ export default async function handler(request, response) {
     });
   }
 
-  if (requiereValidacionVisual(pregunta)) {
-    return response.status(200).json({
-      respuesta: RESPUESTA_VISUAL_NO_VALIDADA,
-      fuentes: [],
-      requiereValidacionVisual: true,
-    });
-  }
-
   const limiteVisitante = revisarLimiteVisitante(request);
 
   response.setHeader("X-RateLimit-Limit", String(MAX_CONSULTAS_POR_VENTANA));
@@ -173,6 +165,33 @@ export default async function handler(request, response) {
       retryAfter: limiteVisitante.retryAfter,
       error: `Alcanzaste el límite de ${MAX_CONSULTAS_POR_VENTANA} consultas por cada 10 minutos. Podrás volver a consultar cuando termine la cuenta regresiva.`,
     });
+  }
+
+  if (requiereValidacionVisual(pregunta)) {
+    try {
+      const visualResponse = await fetch(
+        `${BIBLIOTECA_API_URL}/visuales/sugerir?q=${encodeURIComponent(pregunta)}`,
+        {headers: {Accept: "application/json"}},
+      );
+      if (!visualResponse.ok) throw new Error(`La biblioteca respondió ${visualResponse.status}.`);
+      const {visual = null} = await visualResponse.json();
+      return response.status(200).json({
+        respuesta: visual
+          ? `${RESPUESTA_VISUAL_NO_VALIDADA}\n\nLa página relacionada se muestra abajo para revisión humana.`
+          : RESPUESTA_VISUAL_NO_VALIDADA,
+        fuentes: visual ? [{nombre: visual.manual, paginas: [visual.pagina]}] : [],
+        requiereValidacionVisual: true,
+        validacionVisual: visual,
+      });
+    } catch (error) {
+      console.error("Error preparando validación visual:", error);
+      return response.status(200).json({
+        respuesta: RESPUESTA_VISUAL_NO_VALIDADA,
+        fuentes: [],
+        requiereValidacionVisual: true,
+        validacionVisual: null,
+      });
+    }
   }
 
   try {
