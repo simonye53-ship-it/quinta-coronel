@@ -70,9 +70,25 @@ export const asistente = defineType({
               type: 'string',
               validation: (rule) => rule.required().max(140),
             }),
+            defineField({
+              name: 'portada',
+              title: 'Portada o logo',
+              description: 'Imagen que identifica este documento en la biblioteca del sitio.',
+              type: 'image',
+              options: {hotspot: true},
+              fields: [
+                defineField({
+                  name: 'alt',
+                  title: 'Texto alternativo',
+                  type: 'string',
+                  description: 'Describe brevemente la portada o el logo para accesibilidad.',
+                  validation: (rule) => rule.required().warning('Recomendado para accesibilidad.'),
+                }),
+              ],
+            }),
           ],
           preview: {
-            select: {title: 'titulo', subtitle: 'identificador'},
+            select: {title: 'titulo', subtitle: 'identificador', media: 'portada'},
           },
         }),
       ],

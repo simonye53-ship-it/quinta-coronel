@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.npm-cache
 dist
 dist-ssr
 *.local
@@ -23,4 +24,6 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+.wrangler
+.wrangler-config
 .env*

@@ -1,0 +1,16 @@
+name = "veronica-biblioteca"
+main = "src/worker.js"
+compatibility_date = "2026-08-18"
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:3000,http://localhost:5173,https://quinta-coronel.vercel.app"
+
+[[r2_buckets]]
+binding = "BIBLIOTECA"
+bucket_name = "veronica-biblioteca"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "veronica-biblioteca"
+database_id = "1ae9678e-8475-49a8-a239-033a5017bfb8"
+migrations_dir = "migrations"

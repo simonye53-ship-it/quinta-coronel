@@ -9,14 +9,18 @@ const NOMBRES_FUENTES = {
   "GRE 2024": "GRE 2024",
 };
 
-const INSTRUCCIONES = `Eres un Asistente Técnico de Emergencias para Bomberos y primeros respondedores.
-Responde en español usando prioritariamente la biblioteca documental conectada.
-No inventes procedimientos, distancias, números ONU, guías, concentraciones, valores técnicos ni recomendaciones operativas.
-Si las fuentes no contienen información suficiente, dilo claramente.
+const INSTRUCCIONES = `Eres Veronica FireRescue, un asistente técnico de emergencias para Bomberos y primeros respondedores.
+Responde en español usando exclusivamente información recuperada de la biblioteca documental conectada en la consulta actual.
+No uses conocimiento general, memoria del modelo, información pública, inferencias externas ni datos de conversaciones anteriores como respaldo factual.
+Cada afirmación factual debe estar sustentada por al menos una fuente documental recuperada. No inventes procedimientos, distancias, teléfonos, números ONU, guías, concentraciones, valores técnicos ni recomendaciones operativas.
+Si la biblioteca no contiene información suficiente para contestar, responde solamente: "No encontré esta información en los manuales disponibles de la biblioteca técnica." No agregues la respuesta que conozcas por otras fuentes ni expliques cuál podría ser.
 Si la pregunta es ambigua, solicita los antecedentes necesarios antes de responder de forma específica.
 Mantén el contexto de la conversación. Distingue las diferencias entre fuentes cuando existan.
-Organiza la respuesta de forma clara y práctica. No menciones procesos internos de recuperación documental.
+Organiza la respuesta en Markdown claro y práctico: usa títulos breves para separar secciones, párrafos cortos y listas con viñetas cuando enumeres pasos, riesgos o antecedentes. Usa negrita solo para destacar conceptos importantes. No incluyas una sección de fuentes ni menciones procesos internos de recuperación documental, porque las fuentes se presentan por separado en la interfaz.
 No sustituyes el mando, los procedimientos locales ni la evaluación del personal competente en la escena.`;
+
+const RESPUESTA_SIN_RESPALDO =
+  "No encontré esta información en los manuales disponibles de la biblioteca técnica.";
 
 const VENTANA_LIMITE_MS = 10 * 60 * 1000;
 const MAX_CONSULTAS_POR_VENTANA = 5;
@@ -139,6 +143,9 @@ export default async function handler(request, response) {
       model: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
       input: pregunta,
       system_instruction: INSTRUCCIONES,
+      generation_config: {
+        tool_choice: "any",
+      },
       tools: [
         {
           type: "file_search",
@@ -155,10 +162,17 @@ export default async function handler(request, response) {
     }
 
     const interaction = await ai.interactions.create(solicitud);
+    const fuentes = extraerFuentes(interaction);
+
+    // El prompt guía al modelo, pero esta validación impide que una respuesta sin
+    // evidencia documental llegue al usuario aunque el modelo use conocimiento general.
+    const respuestaConRespaldo = fuentes.length > 0
+      ? interaction.output_text || RESPUESTA_SIN_RESPALDO
+      : RESPUESTA_SIN_RESPALDO;
 
     return response.status(200).json({
-      respuesta: interaction.output_text || "No se recibió una respuesta.",
-      fuentes: extraerFuentes(interaction),
+      respuesta: respuestaConRespaldo,
+      fuentes,
       interactionId: interaction.id,
     });
   } catch (error) {
