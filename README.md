@@ -85,7 +85,7 @@ operativos: deben pasar por análisis multimodal y revisión antes de habilitars
 
 ### Dataset visual
 
-El dataset visual inicial contiene 2.511 páginas pertenecientes a 18 documentos. La imagen
+El dataset visual activo contiene 2.479 páginas pertenecientes a 17 documentos. La imagen
 completa de la página es la evidencia primaria. Workers AI genera una descripción solo cuando
 una consulta visual recupera esa página; se almacena como `pending` y se muestra junto a la
 imagen para revisión humana. Dos revisiones concordantes pueden marcarla como `supported`;
@@ -102,6 +102,10 @@ npm run cf:visuales -- --directory "C:\ruta\a\los\manuales" --start-at rescate-i
 La variable `VERONICA_ADMIN_TOKEN` debe coincidir con el secreto `ADMIN_TOKEN` del Worker.
 Los archivos renderizados son temporales y se eliminan automáticamente al terminar cada
 manual; no se guardan dentro del repositorio.
+
+La guía AHA de RCP permanece archivada de forma reversible y está excluida del catálogo,
+la recuperación documental y el dataset visual activo para evitar que se contraponga al
+manual de RCP seleccionado para esta etapa.
 
 ## Estado actual
 
