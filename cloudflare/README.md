@@ -4,6 +4,7 @@ Este servicio mantiene separados el almacenamiento documental y el modelo de IA:
 
 - R2 conserva los PDF y portadas originales.
 - D1 conserva el catálogo y los fragmentos de texto por página.
+- D1 conserva también las evaluaciones de respuestas y sus correcciones; Sanity queda reservado para contenido editorial y visual.
 - FTS5 permite búsquedas textuales sin depender de Gemini File Search.
 - Vectorize y Workers AI aportan búsqueda semántica multilingüe sin almacenar los PDF en Gemini.
 - El frontend consume solamente las rutas públicas de lectura.
@@ -67,6 +68,7 @@ El frontend utiliza `VITE_BIBLIOTECA_API_URL`. Si la variable no existe o el ser
 - `GET /manuales/:slug/archivo`: entrega el PDF desde R2 y admite solicitudes por rango.
 - `GET /manuales/:slug/portada`: entrega la portada cuando existe.
 - `GET /buscar?q=...`: recupera hasta ocho fragmentos textuales con documento y páginas.
+- `POST /validaciones/respuestas`: registra la evaluación humana de una respuesta y su evidencia documental.
 
 La búsqueda combina similitud semántica de Vectorize con coincidencias textuales FTS5 de D1.
 Gemini no consulta ni almacena los PDF: el backend de Vercel le entrega únicamente los

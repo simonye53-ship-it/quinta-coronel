@@ -46,6 +46,7 @@ type Mensaje = {
   preguntaOriginal?: string;
   retryAt?: number;
   validacionVisual?: ValidacionVisual | null;
+  interactionId?: string;
 };
 
 type ChatResponse = {
@@ -188,12 +189,116 @@ const RespuestaMarkdown = ({contenido}: {contenido: string}) => (
 );
 
 const obtenerRevisorId = () => {
-  const clave = "veronica-visual-reviewer-id";
+  const clave = "veronica-reviewer-id";
   const existente = window.localStorage.getItem(clave);
   if (existente) return existente;
-  const nuevo = crearId();
+  const anterior = window.localStorage.getItem("veronica-visual-reviewer-id");
+  const nuevo = anterior || crearId();
   window.localStorage.setItem(clave, nuevo);
   return nuevo;
+};
+
+const EvaluacionRespuesta = ({mensaje}: {mensaje: Mensaje}) => {
+  const [veredicto, setVeredicto] = useState("");
+  const [correccion, setCorreccion] = useState("");
+  const [mostrarDetalle, setMostrarDetalle] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [resultado, setResultado] = useState<{error?: string; confirmacion?: string}>({});
+
+  const guardar = async (valor: "correct" | "partial" | "incorrect" | "dangerous") => {
+    setVeredicto(valor);
+    setResultado({});
+    if (valor !== "correct" && correccion.trim().length < 5) {
+      setMostrarDetalle(true);
+      setResultado({error: "Describe brevemente qué debería corregirse."});
+      return;
+    }
+    setGuardando(true);
+    try {
+      const response = await fetch(`${BIBLIOTECA_API_URL}/validaciones/respuestas`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          responseId: mensaje.id,
+          reviewerId: obtenerRevisorId(),
+          interactionId: mensaje.interactionId,
+          verdict: valor,
+          question: mensaje.preguntaOriginal,
+          answer: mensaje.texto,
+          sources: mensaje.fuentes || [],
+          correction: correccion.trim(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo guardar la evaluación.");
+      setResultado({confirmacion: "Evaluación guardada para mejorar Verónica."});
+    } catch (error) {
+      setResultado({error: error instanceof Error ? error.message : "No se pudo guardar la evaluación."});
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <aside className="mt-3 rounded-lg border border-border/80 bg-card px-4 py-3" aria-label="Evaluar respuesta">
+      <p className="text-xs font-bold text-foreground">¿Esta respuesta está respaldada y es técnicamente correcta?</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {([
+          ["correct", "Correcta"],
+          ["partial", "Parcial"],
+          ["incorrect", "Incorrecta"],
+          ["dangerous", "Peligrosa"],
+        ] as const).map(([valor, etiqueta]) => (
+          <button
+            key={valor}
+            type="button"
+            disabled={guardando}
+            onClick={() => {
+              if (valor !== "correct" && !mostrarDetalle) {
+                setVeredicto(valor);
+                setMostrarDetalle(true);
+                setResultado({});
+                return;
+              }
+              void guardar(valor);
+            }}
+            className={`rounded-md border px-3 py-2 text-xs font-bold transition-colors disabled:opacity-50 ${
+              veredicto === valor
+                ? valor === "dangerous"
+                  ? "border-destructive bg-destructive text-destructive-foreground"
+                  : "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background hover:border-primary/50"
+            }`}
+          >
+            {etiqueta}
+          </button>
+        ))}
+      </div>
+      {mostrarDetalle && veredicto !== "correct" && (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={correccion}
+            onChange={(event) => setCorreccion(event.target.value)}
+            rows={2}
+            maxLength={5000}
+            placeholder="Indica el error, la fuente correcta o qué información falta."
+            className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <button
+            type="button"
+            disabled={guardando || correccion.trim().length < 5}
+            onClick={() => void guardar(veredicto as "partial" | "incorrect" | "dangerous")}
+            className="rounded-md bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
+          >
+            Guardar evaluación
+          </button>
+        </div>
+      )}
+      {resultado.error && <p className="mt-2 text-xs font-semibold text-destructive">{resultado.error}</p>}
+      {resultado.confirmacion && <p className="mt-2 text-xs font-semibold text-emerald-700">{resultado.confirmacion}</p>}
+      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">La evaluación queda registrada para revisión; no entrena ni modifica automáticamente al asistente.</p>
+    </aside>
+  );
 };
 
 const ValidacionVisualCard = ({visual, pregunta}: {visual: ValidacionVisual; pregunta: string}) => {
@@ -432,6 +537,7 @@ const Asistente = () => {
           fuentes: data.fuentes || [],
           preguntaOriginal: texto,
           validacionVisual: data.validacionVisual,
+          interactionId: data.interactionId,
         },
       ]);
       setInteractionId(data.interactionId || null);
@@ -627,6 +733,9 @@ const Asistente = () => {
                             visual={mensaje.validacionVisual}
                             pregunta={mensaje.preguntaOriginal || ""}
                           />
+                        )}
+                        {mensaje.rol === "asistente" && !mensaje.error && mensaje.preguntaOriginal && (
+                          <EvaluacionRespuesta mensaje={mensaje} />
                         )}
                       </div>
                       {mensaje.rol === "usuario" && (

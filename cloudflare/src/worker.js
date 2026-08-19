@@ -538,6 +538,63 @@ const guardarValidacionVisual = async (request, env, id) => {
   return {estado, validaciones: conteos};
 };
 
+const guardarValidacionRespuesta = async (request, env) => {
+  const cuerpo = await request.json();
+  const responseId = String(cuerpo.responseId || "").trim().slice(0, 100);
+  const reviewerId = String(cuerpo.reviewerId || "").trim().slice(0, 100);
+  const interactionId = String(cuerpo.interactionId || "").trim().slice(0, 200) || null;
+  const verdict = String(cuerpo.verdict || "");
+  const question = String(cuerpo.question || "").trim().slice(0, 3000);
+  const answer = String(cuerpo.answer || "").trim().slice(0, 12000);
+  const correction = String(cuerpo.correction || "").trim().slice(0, 5000);
+  const sources = Array.isArray(cuerpo.sources) ? cuerpo.sources.slice(0, 30) : [];
+
+  if (
+    responseId.length < 8 ||
+    reviewerId.length < 8 ||
+    !question ||
+    !answer ||
+    !["correct", "partial", "incorrect", "dangerous"].includes(verdict)
+  ) {
+    return respuestaJson({error: "Evaluación inválida."}, 400);
+  }
+  if (["partial", "incorrect", "dangerous"].includes(verdict) && correction.length < 5) {
+    return respuestaJson({error: "Describe brevemente el problema o la corrección."}, 400);
+  }
+
+  const sourcesJson = JSON.stringify(sources.map((source) => ({
+    nombre: String(source?.nombre || "").slice(0, 300),
+    paginas: Array.isArray(source?.paginas)
+      ? source.paginas.map(Number).filter(Number.isFinite).slice(0, 100)
+      : [],
+  })));
+
+  await env.DB.prepare(`
+    INSERT INTO response_validations
+      (response_id, reviewer_id, interaction_id, verdict, question, answer, sources_json, correction)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+    ON CONFLICT(response_id, reviewer_id) DO UPDATE SET
+      interaction_id = excluded.interaction_id,
+      verdict = excluded.verdict,
+      question = excluded.question,
+      answer = excluded.answer,
+      sources_json = excluded.sources_json,
+      correction = excluded.correction,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    responseId,
+    reviewerId,
+    interactionId,
+    verdict,
+    question,
+    answer,
+    sourcesJson,
+    correction,
+  ).run();
+
+  return {guardada: true};
+};
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -578,6 +635,10 @@ export default {
           200,
           cors,
         );
+      }
+
+      if (request.method === "POST" && url.pathname === "/validaciones/respuestas") {
+        return respuestaJson(await guardarValidacionRespuesta(request, env), 200, cors);
       }
 
       if (request.method !== "GET") {
