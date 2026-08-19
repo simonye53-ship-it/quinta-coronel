@@ -13,6 +13,7 @@ Si la evidencia permite responder solo una parte de la consulta, responde esa pa
 Si la pregunta es ambigua, solicita los antecedentes necesarios antes de responder de forma específica.
 Mantén el contexto de la conversación. Distingue las diferencias entre fuentes cuando existan.
 Organiza la respuesta en Markdown claro y práctico: usa títulos breves para separar secciones, párrafos cortos y listas con viñetas cuando enumeres pasos, riesgos o antecedentes. Usa negrita solo para destacar conceptos importantes. No incluyas una sección de fuentes ni menciones procesos internos de recuperación documental, porque las fuentes se presentan por separado en la interfaz.
+En consultas de rescate vehicular, nunca recomiendes ni infieras dónde cortar. Solo puedes identificar zonas donde debe evitarse el corte cuando estén respaldadas por la Rescue Sheet oficial exacta y validada del vehículo. Una ausencia de color o pictograma no constituye una zona segura.
 No sustituyes el mando, los procedimientos locales ni la evaluación del personal competente en la escena.`;
 
 const RESPUESTA_SIN_RESPALDO =
@@ -28,10 +29,21 @@ Encontré una página relacionada con tu consulta. Debajo verás:
 - Los botones **Correcto**, **Parcial**, **Incorrecto** y **No sé**.
 
 Compara la lectura automática con la página original y marca el resultado. Si eliges **Parcial** o **Incorrecto**, escribe la corrección técnica. La interpretación todavía no se usará como indicación operativa hasta reunir validaciones concordantes.`;
+const RESPUESTA_CORTE_SIN_HOJA_EXACTA = `## No existe una Rescue Sheet exacta disponible
+
+La guía general de pictogramas no contiene la ubicación de riesgos de este vehículo específico. Por eso no la usaré para inferir dónde intervenir.
+
+Cuando exista una Rescue Sheet oficial que coincida con **modelo, generación, año, carrocería y motorización**, Veronica mostrará exclusivamente las zonas donde debe **evitarse el corte**: airbags, pretensores, refuerzos, alta tensión, depósitos y otros riesgos representados.
+
+Veronica no recomendará un punto de corte. La selección del punto y la técnica corresponde al personal de rescate competente.`;
 
 const requiereValidacionVisual = (pregunta) =>
   /\b(color(?:es)?|s[ií]mbolo(?:s)?|imagen(?:es)?|flecha(?:s)?|zona(?:s)?\s+de\s+corte|d[oó]nde\s+cortar)\b/i
     .test(pregunta);
+
+const preguntaDondeCortarVehiculo = (pregunta) =>
+  /\bd[oó]nde\s+(?:puedo\s+)?cort(?:o|ar)\s+(?:un|el|la)\s+[\p{L}\d-]{2,}/iu.test(pregunta) ||
+  /\ben\s+qu[eé]\s+(?:zona|parte)\s+(?:puedo\s+)?cortar\b/iu.test(pregunta);
 
 const limpiarMarcadoresEvidencia = (texto) => texto
   .replace(/\s*\[(?:EVIDENCIA|FUENTE)\s+\d+(?:\s*,\s*(?:EVIDENCIA|FUENTE)?\s*\d+)*\]/gi, "")
@@ -173,6 +185,14 @@ export default async function handler(request, response) {
       tipo: "limite_visitante",
       retryAfter: limiteVisitante.retryAfter,
       error: `Alcanzaste el límite de ${MAX_CONSULTAS_POR_VENTANA} consultas por cada 10 minutos. Podrás volver a consultar cuando termine la cuenta regresiva.`,
+    });
+  }
+
+  if (preguntaDondeCortarVehiculo(pregunta)) {
+    return response.status(200).json({
+      respuesta: RESPUESTA_CORTE_SIN_HOJA_EXACTA,
+      fuentes: [],
+      requiereRescueSheetExacta: true,
     });
   }
 

@@ -26,6 +26,15 @@ La respuesta deberá indicar: “Evite intervenir sobre las zonas resaltadas y c
 exacta del vehículo. La selección del punto y la técnica de corte corresponde al personal de
 rescate competente”. Siempre mostrará fuente, versión, página y superposición de exclusiones.
 
+Esta es una regla ejecutable del producto. Ante una pregunta como “¿dónde corto un Mazda 5?”:
+
+- sin Rescue Sheet exacta, Verónica debe indicar que no dispone de evidencia específica y no
+  utilizar la guía general de pictogramas para inferir ubicaciones;
+- con Rescue Sheet exacta y validada, debe reformular la consulta como “zonas donde evitar
+  cortar” y señalar exclusivamente esas exclusiones sobre la hoja original;
+- nunca debe dibujar, recomendar ni describir una zona positiva de corte, aunque el sector no
+  tenga colores o pictogramas.
+
 ## Lo que aporta la guía CTIF / Euro NCAP de 2020
 
 La guía enseña a leer el formato de las Rescue Sheets y contiene cuatro bloques relevantes:
