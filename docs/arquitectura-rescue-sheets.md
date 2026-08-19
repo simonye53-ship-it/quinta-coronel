@@ -154,6 +154,58 @@ son suficientes para aprobar coordenadas o zonas de corte.
 5. Integrar una consulta cerrada en el chatbot que solo recupere hojas confirmadas.
 6. Ejecutar evaluaciones adversariales antes de ampliar la biblioteca.
 
+## Fuentes candidatas para incorporar en la Etapa 2
+
+Estas fuentes deben mantenerse en colecciones separadas según su función. Una norma o guía
+de diseño puede explicar un pictograma, pero no debe responder dónde está un componente en
+un vehículo concreto.
+
+### Colección normativa y de validación
+
+1. [ISO 17840-1:2022](https://www.iso.org/standard/78461.html): contenido y diseño de
+   Rescue Sheets para automóviles y vehículos comerciales ligeros. Es una norma comercial;
+   se registrará su ficha oficial y el texto completo solo se incorporará si se obtiene una copia
+   con licencia válida.
+2. [Euro NCAP PC 101-1, Rescue Sheet Guidelines v2.2, marzo de 2025](https://cdn.euroncap.com/cars/assets/pc_101_1_rescue_sheet_guidelines_v22_7c8ac92f40.pdf):
+   guía pública prioritaria para estructura, colores, pictogramas, calidad visual, identidad,
+   leyenda dinámica y capítulos adicionales. Indica implementación desde enero de 2026.
+3. [Euro NCAP PC 101-2, Translation of pictograms and headers for ISO 17840](https://www.euroncap.com/post-crash-safety/):
+   traducciones oficiales recomendadas para encabezados y leyendas.
+4. [Euro NCAP PC 101-3, Rescue Sheet naming convention](https://www.euroncap.com/post-crash-safety/):
+   reglas de nombres de archivo que ayudarán a extraer marca, modelo, variante, idioma y
+   versión sin inventar identificadores.
+5. [Euro NCAP Checklist for Rescue Sheet v1.0](https://www.euroncap.com/supporting-information/):
+   base para el control automático y humano previo a aprobar una hoja.
+6. [Euro NCAP Post-Crash Protocol v1.2](https://cdn.euroncap.com/cars/assets/Euro_NCAP_Protocol_Post_Crash_v1_2_b04c4c3356.pdf):
+   protocolo publicado para 2026 que exige Rescue Sheet y ERG de la variante evaluada,
+   archivos PDF, convención PC 101-3 y futura asociación con VIN/TVV.
+
+### Ampliaciones normativas futuras
+
+- [ISO 17840-2:2019](https://www.iso.org/standard/67351.html): buses, autocares y vehículos
+  comerciales pesados; confirmada como vigente en 2025.
+- ISO 17840-3:2019: plantilla de Emergency Response Guide. Debe vigilarse porque existen
+  enmiendas en desarrollo.
+- [ISO 17840-4:2018](https://www.iso.org/standard/67354.html): etiquetas y colores de energía
+  de propulsión; actualmente sujeta a proceso de revisión.
+
+### Colección operacional por vehículo
+
+Después de cargar las fuentes anteriores se incorporarán, desde Euro Rescue, Euro NCAP o el
+fabricante, las Rescue Sheets y ERG oficiales de cada vehículo. Cada hoja deberá registrar
+fabricante, modelo, generación, carrocería, mercado, año, propulsión, idioma, versión, fuente
+oficial y hash. Esta colección será la única autorizada para ubicar componentes de un vehículo
+específico.
+
+### Orden de carga acordado
+
+1. PC 101-1 v2.2.
+2. PC 101-2 y PC 101-3.
+3. Checklist de Euro NCAP.
+4. Referencias ISO obtenidas legalmente.
+5. Conjunto piloto de Rescue Sheets y ERG oficiales por vehículo.
+6. ISO 17840-2 cuando se amplíe el alcance a buses o vehículos pesados.
+
 Ningún sistema puede prometer ausencia absoluta de errores. La arquitectura debe reducir el
 riesgo haciendo que cada incertidumbre produzca una abstención y que ninguna inferencia del
 modelo tenga autoridad para crear una indicación operativa.
