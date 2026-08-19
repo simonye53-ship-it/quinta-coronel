@@ -1,5 +1,24 @@
 # Arquitectura segura para Rescue Sheets
 
+## Piloto activo - Hyundai SANTA FE PHEV
+
+La primera ficha de laboratorio corresponde a Hyundai SANTA FE Plug-In Hybrid, codigo de
+generacion MX5, desde 2024, SUV de cinco puertas y 5/6/7 plazas. El documento tiene ID
+`KMH-MX5-RS-P-5-202404`, version 02, cuatro paginas, idioma aleman y sistema de 360 V.
+
+El archivo fue aportado por el usuario. Aunque presenta marca y formato del fabricante, su
+procedencia oficial permanece `unverified` hasta contrastarlo con una URL o repositorio
+oficial de Hyundai. Sus paginas pueden mostrarse para revision, pero no existen todavia
+anotaciones geometricas de exclusion validadas. Su estado es `pilot` y no habilita una
+indicacion operacional.
+
+La prueba diferencia tres estados:
+
+- candidato: coincide marca/modelo, pero faltan motorizacion, ano o generacion;
+- coincidencia de metadatos: coinciden PHEV y ano, pero falta confirmar visualmente el
+  vehiculo real y la ficha continua sin validar;
+- sin coincidencia: no se muestra una ficha de otro vehiculo como sustituto.
+
 ## Decisión principal
 
 Verónica no recomendará ni determinará dónde cortar. Su función será conversar,

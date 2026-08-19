@@ -36,6 +36,18 @@ La guía general de pictogramas no contiene la ubicación de riesgos de este veh
 Cuando exista una Rescue Sheet oficial que coincida con **modelo, generación, año, carrocería y motorización**, Veronica mostrará exclusivamente las zonas donde debe **evitarse el corte**: airbags, pretensores, refuerzos, alta tensión, depósitos y otros riesgos representados.
 
 Veronica no recomendará un punto de corte. La selección del punto y la técnica corresponde al personal de rescate competente.`;
+const RESPUESTA_RESCUE_SHEET_PILOTO = (sheet) => `## Rescue Sheet piloto encontrada
+
+Encontré una ficha candidata para **${sheet.manufacturer} ${sheet.model} ${sheet.variant}**, desde ${sheet.year_from}, código de generación **${sheet.generation_code}**.
+
+Esta ficha está en laboratorio y todavía tiene dos validaciones pendientes:
+
+- Su procedencia oficial debe verificarse contra una fuente del fabricante.
+- Sus zonas de exclusión visual todavía no han sido anotadas y validadas.
+
+Por ello, mostraré el documento original para revisión, pero **no indicaré dónde cortar ni interpretaré una zona como segura**.
+
+Antes de asociarla a un vehículo real se debe confirmar: ${sheet.missing_confirmation.join(", ")}.`;
 
 const requiereValidacionVisual = (pregunta) =>
   /\b(color(?:es)?|s[ií]mbolo(?:s)?|imagen(?:es)?|flecha(?:s)?|zona(?:s)?\s+de\s+corte|d[oó]nde\s+cortar)\b/i
@@ -44,6 +56,10 @@ const requiereValidacionVisual = (pregunta) =>
 const preguntaDondeCortarVehiculo = (pregunta) =>
   /\bd[oó]nde\s+(?:puedo\s+)?cort(?:o|ar)\s+(?:un|el|la)\s+[\p{L}\d-]{2,}/iu.test(pregunta) ||
   /\ben\s+qu[eé]\s+(?:zona|parte)\s+(?:puedo\s+)?cortar\b/iu.test(pregunta);
+
+const consultaRescueSheet = (pregunta) =>
+  preguntaDondeCortarVehiculo(pregunta) ||
+  /\b(rescue\s*sheet|hoja\s+(?:de\s+)?rescate|ficha\s+de\s+rescate|hoja\s+de\s+seguridad)\b/i.test(pregunta);
 
 const limpiarMarcadoresEvidencia = (texto) => texto
   .replace(/\s*\[(?:EVIDENCIA|FUENTE)\s+\d+(?:\s*,\s*(?:EVIDENCIA|FUENTE)?\s*\d+)*\]/gi, "")
@@ -188,12 +204,28 @@ export default async function handler(request, response) {
     });
   }
 
-  if (preguntaDondeCortarVehiculo(pregunta)) {
-    return response.status(200).json({
-      respuesta: RESPUESTA_CORTE_SIN_HOJA_EXACTA,
-      fuentes: [],
-      requiereRescueSheetExacta: true,
-    });
+  if (consultaRescueSheet(pregunta)) {
+    try {
+      const rescueResponse = await fetch(
+        `${BIBLIOTECA_API_URL}/rescue-sheets/buscar?q=${encodeURIComponent(pregunta)}`,
+        {headers: {Accept: "application/json"}},
+      );
+      if (!rescueResponse.ok) throw new Error(`La biblioteca respondió ${rescueResponse.status}.`);
+      const {sheet = null} = await rescueResponse.json();
+      return response.status(200).json({
+        respuesta: sheet ? RESPUESTA_RESCUE_SHEET_PILOTO(sheet) : RESPUESTA_CORTE_SIN_HOJA_EXACTA,
+        fuentes: [],
+        requiereRescueSheetExacta: true,
+        rescueSheet: sheet,
+      });
+    } catch (error) {
+      console.error("Error buscando Rescue Sheet:", error);
+      return response.status(200).json({
+        respuesta: RESPUESTA_CORTE_SIN_HOJA_EXACTA,
+        fuentes: [],
+        requiereRescueSheetExacta: true,
+      });
+    }
   }
 
   if (requiereValidacionVisual(pregunta)) {

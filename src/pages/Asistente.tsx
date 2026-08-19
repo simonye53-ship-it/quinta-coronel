@@ -37,6 +37,27 @@ type ValidacionVisual = {
   };
 };
 
+type RescueSheet = {
+  id: string;
+  manufacturer: string;
+  model: string;
+  generation_code?: string;
+  variant: string;
+  year_from?: number;
+  body_style?: string;
+  propulsion: string;
+  voltage?: string;
+  language: string;
+  document_id: string;
+  version: string;
+  official_status: "unverified" | "manufacturer_verified";
+  validation_status: "pending" | "in_review" | "validated" | "rejected";
+  original_url: string;
+  match: "candidate" | "metadata_match";
+  missing_confirmation: string[];
+  pages: Array<{number: number; width: number; height: number; image_url: string}>;
+};
+
 type Mensaje = {
   id: string;
   rol: "usuario" | "asistente";
@@ -47,6 +68,7 @@ type Mensaje = {
   retryAt?: number;
   validacionVisual?: ValidacionVisual | null;
   interactionId?: string;
+  rescueSheet?: RescueSheet | null;
 };
 
 type ChatResponse = {
@@ -56,6 +78,7 @@ type ChatResponse = {
   error?: string;
   retryAfter?: number;
   validacionVisual?: ValidacionVisual | null;
+  rescueSheet?: RescueSheet | null;
 };
 
 type IdentificadorManual = string;
@@ -380,6 +403,30 @@ const ValidacionVisualCard = ({visual, pregunta}: {visual: ValidacionVisual; pre
   );
 };
 
+const RescueSheetCard = ({sheet}: {sheet: RescueSheet}) => (
+  <aside className="mt-3 overflow-hidden rounded-lg border border-sky-600/30 bg-sky-50/50" aria-label="Rescue Sheet piloto">
+    <div className="border-b border-sky-600/20 px-4 py-3">
+      <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-800">Etapa 2 · ficha piloto sin validar</p>
+      <p className="mt-1 text-sm font-bold text-foreground">{sheet.manufacturer} {sheet.model} · {sheet.variant}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{sheet.document_id} · versión {sheet.version} · idioma {sheet.language.toUpperCase()}</p>
+    </div>
+    <div className="grid gap-3 bg-white p-3 sm:grid-cols-2">
+      {sheet.pages.map((page) => (
+        <a key={page.number} href={page.image_url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-md border border-border bg-muted">
+          <img src={page.image_url} alt={`Página ${page.number} de la Rescue Sheet de ${sheet.manufacturer} ${sheet.model}`} loading="lazy" className="w-full object-contain transition-transform group-hover:scale-[1.01]" />
+          <span className="block border-t border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">Página {page.number}</span>
+        </a>
+      ))}
+    </div>
+    <div className="space-y-2 border-t border-sky-600/20 px-4 py-3">
+      <a href={sheet.original_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-xs font-bold text-primary underline underline-offset-4">
+        Abrir PDF original <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">Procedencia del fabricante pendiente de verificación. No se han validado zonas de exclusión ni se autoriza orientación de corte.</p>
+    </div>
+  </aside>
+);
+
 const Asistente = () => {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [entrada, setEntrada] = useState("");
@@ -538,6 +585,7 @@ const Asistente = () => {
           preguntaOriginal: texto,
           validacionVisual: data.validacionVisual,
           interactionId: data.interactionId,
+          rescueSheet: data.rescueSheet,
         },
       ]);
       setInteractionId(data.interactionId || null);
@@ -734,6 +782,7 @@ const Asistente = () => {
                             pregunta={mensaje.preguntaOriginal || ""}
                           />
                         )}
+                        {mensaje.rescueSheet && <RescueSheetCard sheet={mensaje.rescueSheet} />}
                         {mensaje.rol === "asistente" && !mensaje.error && mensaje.preguntaOriginal && (
                           <EvaluacionRespuesta mensaje={mensaje} />
                         )}

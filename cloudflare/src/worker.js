@@ -90,6 +90,105 @@ const listarManuales = async (request, env) => {
   }));
 };
 
+const normalizarBusqueda = (texto) => texto
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .toLocaleLowerCase("es")
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim();
+
+const serializarRescueSheet = async (request, env, sheet) => {
+  const {results: pages = []} = await env.DB.prepare(`
+    SELECT page_number, width, height
+    FROM rescue_sheet_pages
+    WHERE sheet_id = ?1
+    ORDER BY page_number
+  `).bind(sheet.id).all();
+  const base = new URL(request.url).origin;
+  return {
+    ...sheet,
+    original_url: `${base}/rescue-sheets/${encodeURIComponent(sheet.slug)}/archivo`,
+    pages: pages.map((page) => ({
+      number: page.page_number,
+      width: page.width,
+      height: page.height,
+      image_url: `${base}/rescue-sheets/${encodeURIComponent(sheet.slug)}/paginas/${page.page_number}`,
+    })),
+  };
+};
+
+const buscarRescueSheets = async (request, url, env) => {
+  const query = normalizarBusqueda(url.searchParams.get("q") || "");
+  if (!query) return {sheet: null};
+  const {results = []} = await env.DB.prepare(`
+    SELECT id, slug, manufacturer, model, generation_code, variant, year_from, year_to,
+           body_style, seats, propulsion, voltage, market, language, document_id,
+           version, version_date, source_type, official_status, validation_status,
+           search_text, status
+    FROM rescue_sheets
+    WHERE status IN ('pilot', 'active')
+  `).all();
+  const tokens = new Set(query.split(" ").filter((token) => token.length > 1));
+  const ranked = results
+    .map((sheet) => {
+      const searchable = new Set(normalizarBusqueda(sheet.search_text).split(" "));
+      const score = Array.from(tokens).reduce(
+        (total, token) => total + (searchable.has(token) ? 1 : 0),
+        0,
+      );
+      return {sheet, score};
+    })
+    .filter(({score}) => score >= 2)
+    .sort((a, b) => b.score - a.score);
+  if (!ranked.length) return {sheet: null};
+  const sheet = await serializarRescueSheet(request, env, ranked[0].sheet);
+  const variantConfirmed = /\b(phev|plug\s*in|hibrid[oa]\s+enchufable)\b/i.test(query);
+  const yearConfirmed = sheet.year_from && query.includes(String(sheet.year_from));
+  return {
+    sheet: {
+      ...sheet,
+      match: variantConfirmed && yearConfirmed ? "metadata_match" : "candidate",
+      missing_confirmation: [
+        !variantConfirmed ? "motorización PHEV" : null,
+        !yearConfirmed ? `año ${sheet.year_from} o posterior dentro de esta generación` : null,
+        "confirmación visual de generación/carrocería",
+      ].filter(Boolean),
+    },
+  };
+};
+
+const obtenerRescueSheet = (env, slug) => env.DB.prepare(`
+  SELECT * FROM rescue_sheets WHERE slug = ?1 AND status IN ('pilot', 'active')
+`).bind(slug).first();
+
+const servirRescueSheet = async (request, env, slug, pageNumber = null) => {
+  const sheet = await obtenerRescueSheet(env, slug);
+  if (!sheet) return respuestaJson({error: "Rescue Sheet no encontrada."}, 404);
+  let key = sheet.r2_key;
+  if (pageNumber !== null) {
+    const page = await env.DB.prepare(`
+      SELECT r2_key FROM rescue_sheet_pages WHERE sheet_id = ?1 AND page_number = ?2
+    `).bind(sheet.id, pageNumber).first();
+    if (!page) return respuestaJson({error: "Página no encontrada."}, 404);
+    key = page.r2_key;
+  }
+  const object = await env.BIBLIOTECA.get(key, pageNumber === null ? {range: request.headers} : {});
+  if (!object) return respuestaJson({error: "Recurso no cargado en R2."}, 404);
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("ETag", object.httpEtag);
+  headers.set("Cache-Control", "public, max-age=86400, immutable");
+  const partial = pageNumber === null && Boolean(object.range);
+  if (pageNumber === null) headers.set("Accept-Ranges", "bytes");
+  if (partial) {
+    const offset = object.range.offset ?? 0;
+    const length = object.range.length ?? object.size;
+    headers.set("Content-Range", `bytes ${offset}-${offset + length - 1}/${object.size}`);
+    headers.set("Content-Length", String(length));
+  }
+  return new Response(object.body, {status: partial ? 206 : 200, headers});
+};
+
 const obtenerManual = (env, slug) =>
   env.DB.prepare(`
     SELECT id, slug, title, institution, edition, description, r2_key,
@@ -736,6 +835,10 @@ export default {
         return respuestaJson(await buscarFragmentos(url, env), 200, cors);
       }
 
+      if (url.pathname === "/rescue-sheets/buscar") {
+        return respuestaJson(await buscarRescueSheets(request, url, env), 200, cors);
+      }
+
       if (url.pathname === "/visuales/sugerir") {
         return respuestaJson(await sugerirActivoVisual(request, env), 200, cors);
       }
@@ -756,6 +859,25 @@ export default {
       const recurso = url.pathname.match(/^\/manuales\/([^/]+)\/(archivo|portada)$/);
       if (recurso) {
         const response = await servirObjeto(request, env, decodeURIComponent(recurso[1]), recurso[2]);
+        for (const [key, value] of Object.entries(cors)) response.headers.set(key, value);
+        return response;
+      }
+
+      const rescueFile = url.pathname.match(/^\/rescue-sheets\/([^/]+)\/archivo$/);
+      if (rescueFile) {
+        const response = await servirRescueSheet(request, env, decodeURIComponent(rescueFile[1]));
+        for (const [key, value] of Object.entries(cors)) response.headers.set(key, value);
+        return response;
+      }
+
+      const rescuePage = url.pathname.match(/^\/rescue-sheets\/([^/]+)\/paginas\/(\d+)$/);
+      if (rescuePage) {
+        const response = await servirRescueSheet(
+          request,
+          env,
+          decodeURIComponent(rescuePage[1]),
+          Number(rescuePage[2]),
+        );
         for (const [key, value] of Object.entries(cors)) response.headers.set(key, value);
         return response;
       }
