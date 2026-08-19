@@ -9,6 +9,28 @@ exacta y de anotaciones humanas trazables.
 
 Si falta una coincidencia exacta o una validación crítica, el sistema debe abstenerse.
 
+## Regla para responder “¿dónde cortar?”
+
+La pregunta puede formularse en positivo, pero el cálculo parte de excluir toda zona de riesgo
+representada en la Rescue Sheet exacta. El sistema debe diferenciar tres resultados:
+
+1. `ZONA_EXCLUIDA`: contiene o intersecta airbags, infladores, pretensores, resortes,
+   refuerzos, baterías, alta tensión, depósitos, líneas, válvulas, componentes SRS, zonas de
+   atención especial u otro peligro anotado. No se propone para corte.
+2. `AREA_SIN_ELEMENTOS_REPRESENTADOS`: no intersecta colores, pictogramas ni polígonos de
+   riesgo de la hoja. Puede mostrarse como área visualmente despejada, pero la ausencia de un
+   símbolo no demuestra por sí sola que el material sea seguro, accesible o adecuado para la
+   herramienta disponible.
+3. `ZONA_DE_CORTE_VALIDADA`: además de estar libre de riesgos representados, posee respaldo
+   explícito de la fuente o una anotación técnica aprobada por revisores competentes. Solo este
+   nivel puede presentarse positivamente como zona de corte.
+
+Por tanto, Verónica podrá responder “en la vista lateral, esta área aparece libre de elementos
+representados” y mostrarla sobre la hoja. No deberá convertir automáticamente el espacio en
+blanco en “corte aquí”. Para usar esa expresión se exige coincidencia exacta del vehículo,
+geometría validada, fuente y página visibles y confirmación del usuario sobre la identidad del
+vehículo.
+
 ## Lo que aporta la guía CTIF / Euro NCAP de 2020
 
 La guía enseña a leer el formato de las Rescue Sheets y contiene cuatro bloques relevantes:
@@ -97,9 +119,11 @@ Cada componente detectado debe conservar:
 3. Mostrar al usuario la identidad encontrada y exigir confirmación.
 4. Recuperar la hoja oficial exacta y su versión vigente.
 5. Mostrar la página original junto con una superposición de anotaciones validadas.
-6. Permitir que Gemini explique únicamente los objetos estructurados recuperados.
-7. Citar fabricante, modelo, variante, versión y página en la respuesta.
-8. Si cualquier condición falla, mostrar la hoja como referencia o abstenerse; nunca inferir
+6. Calcular geométricamente las áreas que no intersectan riesgos anotados y clasificarlas como
+   áreas sin elementos representados, no como zonas seguras automáticas.
+7. Permitir que Gemini explique únicamente los objetos estructurados recuperados.
+8. Citar fabricante, modelo, variante, versión y página en la respuesta.
+9. Si cualquier condición falla, mostrar la hoja como referencia o abstenerse; nunca inferir
    una ubicación de corte.
 
 ## Niveles de confianza
