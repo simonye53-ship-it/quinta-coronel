@@ -41,6 +41,7 @@ const consultaFts = (texto) => {
   const stopwords = new Set([
     "que", "como", "cual", "cuales", "para", "por", "una", "uno", "unos",
     "unas", "del", "las", "los", "con", "sin", "indica", "dice", "manual",
+    "tengo", "persona", "revisa", "bien", "manuales", "sobre", "informacion",
   ]);
   const terminos = numericos.length
     ? numericos
@@ -183,6 +184,8 @@ const buscarFragmentos = async (url, env) => {
     });
   }
 
+  const contieneNumero = /\d/.test(pregunta);
+  const pesoLexico = contieneNumero ? 1.5 : 0.85;
   for (const [indice, fila] of (lexical.results || []).entries()) {
     const clave = String(fila.id);
     const existente = combinados.get(clave);
@@ -190,7 +193,7 @@ const buscarFragmentos = async (url, env) => {
       ...fila,
       score: existente?.score,
       metodo: existente ? "hibrido" : "texto",
-      ranking: (existente?.ranking || 0) + 1.5 / (60 + indice + 1),
+      ranking: (existente?.ranking || 0) + pesoLexico / (60 + indice + 1),
     });
   }
 

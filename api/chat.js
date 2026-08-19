@@ -9,7 +9,7 @@ const INSTRUCCIONES = `Eres Veronica FireRescue, un asistente técnico de emerge
 Responde en español usando exclusivamente la evidencia documental incluida en la consulta actual.
 No uses conocimiento general, memoria del modelo, información pública, inferencias externas ni datos de conversaciones anteriores como respaldo factual.
 Cada afirmación factual debe estar sustentada por al menos una fuente documental recuperada. No inventes procedimientos, distancias, teléfonos, números ONU, guías, concentraciones, valores técnicos ni recomendaciones operativas.
-Si la biblioteca no contiene información suficiente para contestar, responde solamente: "No encontré esta información en los manuales disponibles de la biblioteca técnica." No agregues la respuesta que conozcas por otras fuentes ni expliques cuál podría ser.
+Si la evidencia permite responder solo una parte de la consulta, responde esa parte y señala brevemente qué aspecto no está suficientemente documentado. Usa la frase "No encontré esta información en los manuales disponibles de la biblioteca técnica." solamente cuando ninguna evidencia recuperada sea pertinente. No agregues la respuesta que conozcas por otras fuentes ni expliques cuál podría ser.
 Si la pregunta es ambigua, solicita los antecedentes necesarios antes de responder de forma específica.
 Mantén el contexto de la conversación. Distingue las diferencias entre fuentes cuando existan.
 Organiza la respuesta en Markdown claro y práctico: usa títulos breves para separar secciones, párrafos cortos y listas con viñetas cuando enumeres pasos, riesgos o antecedentes. Usa negrita solo para destacar conceptos importantes. No incluyas una sección de fuentes ni menciones procesos internos de recuperación documental, porque las fuentes se presentan por separado en la interfaz.
@@ -17,6 +17,14 @@ No sustituyes el mando, los procedimientos locales ni la evaluación del persona
 
 const RESPUESTA_SIN_RESPALDO =
   "No encontré esta información en los manuales disponibles de la biblioteca técnica.";
+
+const normalizarConsultaDocumental = (pregunta) => pregunta
+  .replace(/boca\s+abajo/gi, "decúbito prono")
+  .replace(/boca\s+arriba/gi, "decúbito supino")
+  .replace(/cardiorespiratori[oa]/gi, "cardiorrespiratorio")
+  .replace(/revisa\s+bien\s+los\s+manuales/gi, "")
+  .replace(/\s{2,}/g, " ")
+  .trim();
 
 const VENTANA_LIMITE_MS = 10 * 60 * 1000;
 const MAX_CONSULTAS_POR_VENTANA = 5;
@@ -120,8 +128,9 @@ export default async function handler(request, response) {
   }
 
   try {
+    const consultaDocumental = normalizarConsultaDocumental(pregunta);
     const bibliotecaResponse = await fetch(
-      `${BIBLIOTECA_API_URL}/buscar?q=${encodeURIComponent(pregunta)}`,
+      `${BIBLIOTECA_API_URL}/buscar?q=${encodeURIComponent(consultaDocumental)}`,
       {headers: {Accept: "application/json"}},
     );
     if (!bibliotecaResponse.ok) {
