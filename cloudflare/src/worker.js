@@ -42,7 +42,7 @@ const consultaFts = (texto) => {
 
 const listarManuales = async (request, env) => {
   const {results = []} = await env.DB.prepare(`
-    SELECT id, slug, title, institution, edition, description, bytes, pages,
+    SELECT id, slug, cms_key, title, institution, edition, description, bytes, pages,
            sha256, published_at, updated_at, cover_r2_key
     FROM manuals
     WHERE status = 'active'

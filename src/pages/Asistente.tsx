@@ -55,6 +55,7 @@ type BibliotecaResponse = {
   manuales?: Array<{
     id: string;
     slug: string;
+    cms_key?: IdentificadorManual | null;
     title: string;
     institution: string;
     edition?: string;
@@ -189,7 +190,7 @@ const Asistente = () => {
       })
       .then((data) => {
         const catalogo = (data.manuales || []).map((manual) => ({
-          identificador: manual.slug,
+          identificador: manual.cms_key || manual.slug,
           titulo: manual.title,
           autor: manual.edition
             ? `${manual.institution} · ${manual.edition}`
