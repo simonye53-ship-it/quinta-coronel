@@ -5,6 +5,7 @@ Este servicio mantiene separados el almacenamiento documental y el modelo de IA:
 - R2 conserva los PDF y portadas originales.
 - D1 conserva el catálogo y los fragmentos de texto por página.
 - D1 conserva también las evaluaciones de respuestas y sus correcciones; Sanity queda reservado para contenido editorial y visual.
+- Las evaluaciones equivalentes se agrupan mediante una huella anónima de la pregunta normalizada y sus fuentes; cada navegador mantiene un solo voto vigente por caso.
 - FTS5 permite búsquedas textuales sin depender de Gemini File Search.
 - Vectorize y Workers AI aportan búsqueda semántica multilingüe sin almacenar los PDF en Gemini.
 - El frontend consume solamente las rutas públicas de lectura.

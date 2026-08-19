@@ -569,6 +569,22 @@ const guardarValidacionRespuesta = async (request, env) => {
       : [],
   })));
 
+  const questionNormalized = question
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  const sourcesNormalized = JSON.stringify(JSON.parse(sourcesJson)
+    .map((source) => ({
+      nombre: source.nombre.toLocaleLowerCase("es").trim(),
+      paginas: [...source.paginas].sort((a, b) => a - b),
+    }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")));
+  const caseMaterial = new TextEncoder().encode(`${questionNormalized}\n${sourcesNormalized}`);
+  const caseDigest = await crypto.subtle.digest("SHA-256", caseMaterial);
+  const caseKey = Array.from(new Uint8Array(caseDigest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+
   await env.DB.prepare(`
     INSERT INTO response_validations
       (response_id, reviewer_id, interaction_id, verdict, question, answer, sources_json, correction)
@@ -592,7 +608,70 @@ const guardarValidacionRespuesta = async (request, env) => {
     correction,
   ).run();
 
-  return {guardada: true};
+  await env.DB.prepare(`
+    INSERT INTO validation_cases
+      (case_key, question_normalized, representative_question, representative_answer,
+       sources_json, latest_response_id, latest_interaction_id)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+    ON CONFLICT(case_key) DO UPDATE SET
+      representative_question = excluded.representative_question,
+      representative_answer = excluded.representative_answer,
+      sources_json = excluded.sources_json,
+      latest_response_id = excluded.latest_response_id,
+      latest_interaction_id = excluded.latest_interaction_id,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(
+    caseKey,
+    questionNormalized,
+    question,
+    answer,
+    sourcesJson,
+    responseId,
+    interactionId,
+  ).run();
+
+  await env.DB.prepare(`
+    INSERT INTO case_validations
+      (case_key, reviewer_id, response_id, interaction_id, verdict, correction)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+    ON CONFLICT(case_key, reviewer_id) DO UPDATE SET
+      response_id = excluded.response_id,
+      interaction_id = excluded.interaction_id,
+      verdict = excluded.verdict,
+      correction = excluded.correction,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(caseKey, reviewerId, responseId, interactionId, verdict, correction).run();
+
+  const conteos = await env.DB.prepare(`
+    SELECT
+      COUNT(*) AS total,
+      SUM(verdict = 'correct') AS correctas,
+      SUM(verdict = 'partial') AS parciales,
+      SUM(verdict = 'incorrect') AS incorrectas,
+      SUM(verdict = 'dangerous') AS peligrosas
+    FROM case_validations WHERE case_key = ?1
+  `).bind(caseKey).first();
+  const correctas = Number(conteos.correctas || 0);
+  const parciales = Number(conteos.parciales || 0);
+  const incorrectas = Number(conteos.incorrectas || 0);
+  const peligrosas = Number(conteos.peligrosas || 0);
+  const categoriasConVotos = [correctas, parciales, incorrectas, peligrosas]
+    .filter((cantidad) => cantidad > 0).length;
+  const estado = peligrosas > 0
+    ? "dangerous"
+    : categoriasConVotos > 1
+      ? "conflict"
+      : correctas >= 2
+        ? "supported"
+        : incorrectas >= 2
+          ? "rejected"
+          : "pending";
+
+  await env.DB.prepare(`
+    UPDATE validation_cases SET status = ?2, updated_at = CURRENT_TIMESTAMP WHERE case_key = ?1
+  `).bind(caseKey, estado).run();
+
+  return {guardada: true, caseKey, estado, validaciones: conteos};
 };
 
 export default {
