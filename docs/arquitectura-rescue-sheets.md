@@ -2,34 +2,29 @@
 
 ## Decisión principal
 
-La IA generativa no determinará por sí sola dónde cortar. Su función será conversar,
+Verónica no recomendará ni determinará dónde cortar. Su función será conversar,
 identificar el vehículo, recuperar la hoja correcta y explicar datos previamente extraídos y
-validados. La geometría, los símbolos y las zonas de riesgo procederán de la hoja oficial
-exacta y de anotaciones humanas trazables.
+validados. Señalará exclusivamente las zonas, componentes y riesgos que deben evitarse. La
+geometría y los símbolos procederán de la hoja oficial exacta y de anotaciones humanas
+trazables. La decisión sobre el punto y la técnica de corte corresponde al personal competente.
 
 Si falta una coincidencia exacta o una validación crítica, el sistema debe abstenerse.
 
-## Regla para responder “¿dónde cortar?”
+## Regla para responder preguntas sobre corte
 
-La pregunta puede formularse en positivo, pero el cálculo parte de excluir toda zona de riesgo
-representada en la Rescue Sheet exacta. El sistema debe diferenciar tres resultados:
+Aunque la pregunta sea “¿dónde cortar?”, Verónica reformulará la respuesta de manera
+negativa: mostrará dónde debe evitarse el corte según la Rescue Sheet exacta. Una
+`ZONA_A_EVITAR` contiene o intersecta airbags, infladores, pretensores, resortes, refuerzos,
+baterías, alta tensión, depósitos, líneas, válvulas, componentes SRS, zonas de atención
+especial u otro peligro anotado.
 
-1. `ZONA_EXCLUIDA`: contiene o intersecta airbags, infladores, pretensores, resortes,
-   refuerzos, baterías, alta tensión, depósitos, líneas, válvulas, componentes SRS, zonas de
-   atención especial u otro peligro anotado. No se propone para corte.
-2. `AREA_SIN_ELEMENTOS_REPRESENTADOS`: no intersecta colores, pictogramas ni polígonos de
-   riesgo de la hoja. Puede mostrarse como área visualmente despejada, pero la ausencia de un
-   símbolo no demuestra por sí sola que el material sea seguro, accesible o adecuado para la
-   herramienta disponible.
-3. `ZONA_DE_CORTE_VALIDADA`: además de estar libre de riesgos representados, posee respaldo
-   explícito de la fuente o una anotación técnica aprobada por revisores competentes. Solo este
-   nivel puede presentarse positivamente como zona de corte.
+Verónica no calificará el espacio restante como seguro, recomendado ni apto para cortar. La
+ausencia de color o pictograma significa solamente que la hoja no representa allí uno de esos
+elementos; no prueba la composición, accesibilidad o comportamiento estructural del sector.
 
-Por tanto, Verónica podrá responder “en la vista lateral, esta área aparece libre de elementos
-representados” y mostrarla sobre la hoja. No deberá convertir automáticamente el espacio en
-blanco en “corte aquí”. Para usar esa expresión se exige coincidencia exacta del vehículo,
-geometría validada, fuente y página visibles y confirmación del usuario sobre la identidad del
-vehículo.
+La respuesta deberá indicar: “Evite intervenir sobre las zonas resaltadas y confirme la hoja
+exacta del vehículo. La selección del punto y la técnica de corte corresponde al personal de
+rescate competente”. Siempre mostrará fuente, versión, página y superposición de exclusiones.
 
 ## Lo que aporta la guía CTIF / Euro NCAP de 2020
 
@@ -119,8 +114,8 @@ Cada componente detectado debe conservar:
 3. Mostrar al usuario la identidad encontrada y exigir confirmación.
 4. Recuperar la hoja oficial exacta y su versión vigente.
 5. Mostrar la página original junto con una superposición de anotaciones validadas.
-6. Calcular geométricamente las áreas que no intersectan riesgos anotados y clasificarlas como
-   áreas sin elementos representados, no como zonas seguras automáticas.
+6. Calcular y mostrar únicamente las zonas que intersectan riesgos anotados como áreas que
+   deben evitarse.
 7. Permitir que Gemini explique únicamente los objetos estructurados recuperados.
 8. Citar fabricante, modelo, variante, versión y página en la respuesta.
 9. Si cualquier condición falla, mostrar la hoja como referencia o abstenerse; nunca inferir
@@ -144,7 +139,7 @@ marcar elementos omitidos. Para contenido crítico se requieren al menos dos rev
 independientes concordantes; cualquier desacuerdo exige arbitraje y bloquea su uso.
 
 Las descripciones libres enviadas hoy desde el chatbot sirven para descubrir errores, pero no
-son suficientes para aprobar coordenadas o zonas de corte.
+son suficientes para aprobar coordenadas de exclusión.
 
 ## Función de cada tecnología
 
