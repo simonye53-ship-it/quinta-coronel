@@ -61,6 +61,19 @@ Cuando los módulos anteriores estén suficientemente validados, la interacción
 
 Sanity se utilizará únicamente como CMS para textos, títulos, fotografías, portadas y contenido visual menor del sitio. La biblioteca técnica, los datos operacionales, los índices de búsqueda y las fuentes en tiempo real tendrán almacenamiento y procesos independientes.
 
+## Arquitectura documental actual
+
+- Cloudflare R2 conserva los PDF.
+- Cloudflare D1 conserva el catálogo y los fragmentos asociados a páginas.
+- Cloudflare Vectorize recupera fragmentos por similitud semántica.
+- FTS5 en D1 refuerza números, códigos y coincidencias textuales exactas.
+- Workers AI genera embeddings multilingües con BGE-M3.
+- Gemini recibe solamente la pregunta y la evidencia recuperada; no almacena ni busca los manuales.
+- El backend rechaza respuestas sin evidencia y entrega al frontend las fuentes y páginas recuperadas.
+
+Los PDF sin capa de texto no se indexan automáticamente como si estuvieran vacíos. Quedan
+identificados como pendientes de OCR para una etapa de extracción visual controlada.
+
 ## Estado actual
 
 El proyecto se encuentra en la etapa 1: construcción y endurecimiento de la biblioteca consultiva documental. Las etapas siguientes se incorporarán de forma modular para evitar rehacer la arquitectura existente.

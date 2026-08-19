@@ -1,0 +1,19 @@
+[
+  {"id":"gre-2024","archivo":"GRE2024.pdf"},
+  {"id":"control-gases-combustibles","archivo":"GASES COMBUSTIBLES.pdf"},
+  {"id":"control-fuego-vehiculos","archivo":"FUEGO EN VEHICULOS.pdf"},
+  {"id":"escalas-cuerdas-control-incendios","archivo":"ESCALAS Y CUERDAS PARA CONTROL DE INCENDIOS ESTRUCTURALES.pdf"},
+  {"id":"extricacion-i","archivo":"EXTRICACIÓN I.pdf"},
+  {"id":"fuego-y-tacticas","archivo":"FUEGO Y TÁCTICAS.pdf"},
+  {"id":"guia-ace-rcp-2020","archivo":"GUÍA ACE RCP.pdf"},
+  {"id":"control-incendios-forestales","archivo":"INCENDIOS FORESTALES.pdf"},
+  {"id":"reanimacion-cardiopulmonar","archivo":"MANUAL REANIMACIÓN CARDIOPULMONAR.pdf"},
+  {"id":"rescate-inclusivo","archivo":"RESCATE INCLUSIVO.pdf"},
+  {"id":"equipos-intervencion-rapida-rit","archivo":"RESCATE INTERVENCIÓN RÁPIDA.pdf"},
+  {"id":"rescate-urbano-pesado-estructuras-colapsadas","archivo":"RESCATE URBANO EN ESTRUCTURAS COLAPSADAS.pdf"},
+  {"id":"busqueda-rescate-urbano","archivo":"RESCATE URBANO.pdf"},
+  {"id":"riesgos-electricos-bomberos","archivo":"RIESGO ELECTRICO.pdf"},
+  {"id":"soporte-vital-basico","archivo":"SOPORTE VITAL BÁSICO.pdf"},
+  {"id":"supervivencia-incendios-estructurales","archivo":"SUPERVIVENCIA EN INCIDIOS ESTRUCTURALES.pdf"},
+  {"id":"tacticas-incendios","archivo":"TÁCTICAS EN INCENDIOS.pdf"}
+]

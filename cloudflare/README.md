@@ -5,6 +5,7 @@ Este servicio mantiene separados el almacenamiento documental y el modelo de IA:
 - R2 conserva los PDF y portadas originales.
 - D1 conserva el catálogo y los fragmentos de texto por página.
 - FTS5 permite búsquedas textuales sin depender de Gemini File Search.
+- Vectorize y Workers AI aportan búsqueda semántica multilingüe sin almacenar los PDF en Gemini.
 - El frontend consume solamente las rutas públicas de lectura.
 
 No existe una ruta pública de carga. Los documentos se incorporarán mediante una herramienta administrativa autenticada para evitar modificaciones anónimas de la biblioteca.
@@ -35,6 +36,10 @@ npm run cf:deploy
 
 El Worker no contiene dependencias importadas, por lo que el despliegue omite el empaquetado interno de Wrangler.
 
+El índice semántico usa el binding `VECTORIZE` sobre `veronica-manuales` y el binding `AI`
+con `@cf/baai/bge-m3`. Las rutas administrativas de indexación requieren el secreto
+`ADMIN_TOKEN`; nunca debe almacenarse en Git ni exponerse al frontend.
+
 En `ALLOWED_ORIGINS` deben incluirse el localhost de desarrollo y el dominio definitivo de Vercel, separados por comas.
 
 ## Desarrollo local
@@ -53,6 +58,10 @@ El frontend utiliza `VITE_BIBLIOTECA_API_URL`. Si la variable no existe o el ser
 - `GET /manuales/:slug/archivo`: entrega el PDF desde R2 y admite solicitudes por rango.
 - `GET /manuales/:slug/portada`: entrega la portada cuando existe.
 - `GET /buscar?q=...`: recupera hasta ocho fragmentos textuales con documento y páginas.
+
+La búsqueda combina similitud semántica de Vectorize con coincidencias textuales FTS5 de D1.
+Gemini no consulta ni almacena los PDF: el backend de Vercel le entrega únicamente los
+fragmentos recuperados para redactar una respuesta.
 
 ## Seguridad y publicación
 

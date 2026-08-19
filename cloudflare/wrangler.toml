@@ -14,3 +14,10 @@ binding = "DB"
 database_name = "veronica-biblioteca"
 database_id = "1ae9678e-8475-49a8-a239-033a5017bfb8"
 migrations_dir = "migrations"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "veronica-manuales"
+
+[ai]
+binding = "AI"

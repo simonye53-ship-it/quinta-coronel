@@ -1,16 +1,12 @@
 import {GoogleGenAI} from "@google/genai";
 import {createHash} from "node:crypto";
 
-const STORE_PREDETERMINADO =
-  "fileSearchStores/asistente-de-emergencias-bi-zkzggfh9zv74";
-
-const NOMBRES_FUENTES = {
-  "88yvau79o3fm": "Control de emergencias con gases combustibles - ANB Chile",
-  "GRE 2024": "GRE 2024",
-};
+const BIBLIOTECA_API_URL =
+  process.env.BIBLIOTECA_API_URL ||
+  "https://veronica-biblioteca.veronica-firerescue-simon.workers.dev";
 
 const INSTRUCCIONES = `Eres Veronica FireRescue, un asistente técnico de emergencias para Bomberos y primeros respondedores.
-Responde en español usando exclusivamente información recuperada de la biblioteca documental conectada en la consulta actual.
+Responde en español usando exclusivamente la evidencia documental incluida en la consulta actual.
 No uses conocimiento general, memoria del modelo, información pública, inferencias externas ni datos de conversaciones anteriores como respaldo factual.
 Cada afirmación factual debe estar sustentada por al menos una fuente documental recuperada. No inventes procedimientos, distancias, teléfonos, números ONU, guías, concentraciones, valores técnicos ni recomendaciones operativas.
 Si la biblioteca no contiene información suficiente para contestar, responde solamente: "No encontré esta información en los manuales disponibles de la biblioteca técnica." No agregues la respuesta que conozcas por otras fuentes ni expliques cuál podría ser.
@@ -67,26 +63,14 @@ const revisarLimiteVisitante = (request) => {
   };
 };
 
-const extraerFuentes = (interaction) => {
+const construirFuentes = (fragmentos) => {
   const agrupadas = new Map();
-
-  for (const step of interaction?.steps || []) {
-    if (step.type !== "model_output" || !Array.isArray(step.content)) continue;
-
-    for (const bloque of step.content) {
-      for (const annotation of bloque.annotations || []) {
-        if (annotation.type !== "file_citation") continue;
-
-        const original = annotation.file_name || annotation.fileName || "Documento";
-        const nombre = NOMBRES_FUENTES[original] || original;
-        const pagina = Number(annotation.page_number || annotation.pageNumber);
-
-        if (!agrupadas.has(nombre)) agrupadas.set(nombre, new Set());
-        if (Number.isFinite(pagina) && pagina > 0) agrupadas.get(nombre).add(pagina);
-      }
+  for (const fragmento of fragmentos) {
+    if (!agrupadas.has(fragmento.title)) agrupadas.set(fragmento.title, new Set());
+    for (let pagina = fragmento.page_start; pagina <= fragmento.page_end; pagina += 1) {
+      agrupadas.get(fragmento.title).add(pagina);
     }
   }
-
   return Array.from(agrupadas, ([nombre, paginas]) => ({
     nombre,
     paginas: Array.from(paginas).sort((a, b) => a - b),
@@ -105,8 +89,6 @@ export default async function handler(request, response) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  const storeName = process.env.GEMINI_FILE_SEARCH_STORE || STORE_PREDETERMINADO;
-
   if (!apiKey) {
     return response.status(503).json({
       error: "El asistente todavía no está configurado en el servidor.",
@@ -138,20 +120,33 @@ export default async function handler(request, response) {
   }
 
   try {
+    const bibliotecaResponse = await fetch(
+      `${BIBLIOTECA_API_URL}/buscar?q=${encodeURIComponent(pregunta)}`,
+      {headers: {Accept: "application/json"}},
+    );
+    if (!bibliotecaResponse.ok) {
+      throw new Error(`La biblioteca respondió ${bibliotecaResponse.status}.`);
+    }
+    const biblioteca = await bibliotecaResponse.json();
+    const fragmentos = Array.isArray(biblioteca.results) ? biblioteca.results : [];
+    if (!fragmentos.length) {
+      return response.status(200).json({respuesta: RESPUESTA_SIN_RESPALDO, fuentes: []});
+    }
+
+    const evidencia = fragmentos.map((fragmento, indice) => [
+      `[EVIDENCIA ${indice + 1}]`,
+      `Manual: ${fragmento.title}`,
+      `Institución: ${fragmento.institution}`,
+      `Páginas: ${fragmento.page_start}-${fragmento.page_end}`,
+      fragmento.heading ? `Sección: ${fragmento.heading}` : null,
+      `Contenido:\n${fragmento.content}`,
+    ].filter(Boolean).join("\n")).join("\n\n---\n\n");
+
     const ai = new GoogleGenAI({apiKey});
     const solicitud = {
       model: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
-      input: pregunta,
+      input: `PREGUNTA DEL USUARIO:\n${pregunta}\n\nEVIDENCIA DOCUMENTAL AUTORIZADA:\n${evidencia}`,
       system_instruction: INSTRUCCIONES,
-      generation_config: {
-        tool_choice: "any",
-      },
-      tools: [
-        {
-          type: "file_search",
-          file_search_store_names: [storeName],
-        },
-      ],
     };
 
     if (
@@ -162,11 +157,11 @@ export default async function handler(request, response) {
     }
 
     const interaction = await ai.interactions.create(solicitud);
-    const fuentes = extraerFuentes(interaction);
+    const fuentes = construirFuentes(fragmentos);
 
     // El prompt guía al modelo, pero esta validación impide que una respuesta sin
     // evidencia documental llegue al usuario aunque el modelo use conocimiento general.
-    const respuestaConRespaldo = fuentes.length > 0
+    const respuestaConRespaldo = fragmentos.length > 0
       ? interaction.output_text || RESPUESTA_SIN_RESPALDO
       : RESPUESTA_SIN_RESPALDO;
 
