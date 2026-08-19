@@ -26,6 +26,36 @@ const normalizarConsultaDocumental = (pregunta) => pregunta
   .replace(/\s{2,}/g, " ")
   .trim();
 
+const construirConsultasDocumentales = (pregunta) => {
+  const normalizada = normalizarConsultaDocumental(pregunta);
+  const consultas = [normalizada];
+
+  if (/decúbito prono/i.test(normalizada)) {
+    consultas.push("víctima decúbito prono girar decúbito lateral decúbito supino");
+  }
+  if (/hemorragia exanguinante/i.test(normalizada)) {
+    consultas.push("hemorragia exanguinante control presión directa vendaje compresivo torniquete");
+  }
+  if (/paro cardiorrespiratorio|\bPCR\b|\bRCP\b/i.test(normalizada)) {
+    consultas.push("paro cardiorrespiratorio RCP compresiones torácicas");
+  }
+
+  return Array.from(new Set(consultas)).slice(0, 4);
+};
+
+const combinarFragmentos = (grupos, limite = 12) => {
+  const unicos = new Map();
+  const mayorGrupo = Math.max(0, ...grupos.map((grupo) => grupo.length));
+  for (let posicion = 0; posicion < mayorGrupo && unicos.size < limite; posicion += 1) {
+    for (const grupo of grupos) {
+      const fragmento = grupo[posicion];
+      if (fragmento && !unicos.has(fragmento.id)) unicos.set(fragmento.id, fragmento);
+      if (unicos.size >= limite) break;
+    }
+  }
+  return Array.from(unicos.values());
+};
+
 const VENTANA_LIMITE_MS = 10 * 60 * 1000;
 const MAX_CONSULTAS_POR_VENTANA = 5;
 const registroConsultas = globalThis.__quintaRegistroConsultas || new Map();
@@ -128,16 +158,19 @@ export default async function handler(request, response) {
   }
 
   try {
-    const consultaDocumental = normalizarConsultaDocumental(pregunta);
-    const bibliotecaResponse = await fetch(
-      `${BIBLIOTECA_API_URL}/buscar?q=${encodeURIComponent(consultaDocumental)}`,
-      {headers: {Accept: "application/json"}},
-    );
-    if (!bibliotecaResponse.ok) {
-      throw new Error(`La biblioteca respondió ${bibliotecaResponse.status}.`);
-    }
-    const biblioteca = await bibliotecaResponse.json();
-    const fragmentos = Array.isArray(biblioteca.results) ? biblioteca.results : [];
+    const consultasDocumentales = construirConsultasDocumentales(pregunta);
+    const respuestasBiblioteca = await Promise.all(consultasDocumentales.map(async (consulta) => {
+      const bibliotecaResponse = await fetch(
+        `${BIBLIOTECA_API_URL}/buscar?q=${encodeURIComponent(consulta)}`,
+        {headers: {Accept: "application/json"}},
+      );
+      if (!bibliotecaResponse.ok) {
+        throw new Error(`La biblioteca respondió ${bibliotecaResponse.status}.`);
+      }
+      const biblioteca = await bibliotecaResponse.json();
+      return Array.isArray(biblioteca.results) ? biblioteca.results : [];
+    }));
+    const fragmentos = combinarFragmentos(respuestasBiblioteca);
     if (!fragmentos.length) {
       return response.status(200).json({respuesta: RESPUESTA_SIN_RESPALDO, fuentes: []});
     }
