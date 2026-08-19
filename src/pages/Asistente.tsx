@@ -134,6 +134,11 @@ const BIBLIOTECA_API_URL =
   import.meta.env.VITE_BIBLIOTECA_API_URL?.replace(/\/$/, "") ||
   "https://veronica-biblioteca.veronica-firerescue-simon.workers.dev";
 
+const MANUALES_EXCLUIDOS = new Set([
+  "guia-ace-rcp-2020",
+  "guiaAceRcp",
+]);
+
 const ejemplos = [
   "¿Qué indica la GRE para ONU 1203?",
   "¿Qué antecedentes necesito para identificar una fuga de gas?",
@@ -294,7 +299,13 @@ const Asistente = () => {
         return (await response.json()) as BibliotecaResponse;
       })
       .then((data) => {
-        const catalogo = (data.manuales || []).map((manual) => ({
+        const catalogo = (data.manuales || [])
+          .filter((manual) => (
+            !MANUALES_EXCLUIDOS.has(manual.id) &&
+            !MANUALES_EXCLUIDOS.has(manual.slug) &&
+            !MANUALES_EXCLUIDOS.has(manual.cms_key || "")
+          ))
+          .map((manual) => ({
           identificador: manual.cms_key || manual.slug,
           titulo: manual.title,
           autor: manual.edition
@@ -303,7 +314,7 @@ const Asistente = () => {
           descripcion: manual.description,
           url: manual.file_url,
           portadaUrl: manual.cover_url || undefined,
-        }));
+          }));
 
         setManualesCatalogo(catalogo);
       })
@@ -314,7 +325,9 @@ const Asistente = () => {
 
   const manualesSanity = new Map(
     contenido?.manuales
-      ?.filter((manual) => manual.identificador)
+      ?.filter((manual) => (
+        manual.identificador && !MANUALES_EXCLUIDOS.has(manual.identificador)
+      ))
       .map((manual) => [manual.identificador as IdentificadorManual, manual]) ?? [],
   );
 
