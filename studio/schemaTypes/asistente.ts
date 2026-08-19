@@ -21,6 +21,12 @@ export const asistente = defineType({
         identificador: 'gasesCombustibles',
         titulo: 'Control de emergencias con gases combustibles',
       },
+      {
+        _key: 'control-fuego-vehiculos-anb',
+        _type: 'manualAsistente',
+        identificador: 'controlFuegoVehiculos',
+        titulo: 'Control de fuego en vehículos',
+      },
     ],
   },
   fields: [
@@ -41,7 +47,7 @@ export const asistente = defineType({
       name: 'manuales',
       title: 'Títulos de los manuales',
       type: 'array',
-      validation: (rule) => rule.max(2).unique(),
+      validation: (rule) => rule.max(3).unique(),
       of: [
         defineArrayMember({
           name: 'manualAsistente',
@@ -58,6 +64,10 @@ export const asistente = defineType({
                   {
                     title: 'Control de emergencias con gases combustibles',
                     value: 'gasesCombustibles',
+                  },
+                  {
+                    title: 'Control de fuego en vehículos',
+                    value: 'controlFuegoVehiculos',
                   },
                 ],
                 layout: 'radio',
