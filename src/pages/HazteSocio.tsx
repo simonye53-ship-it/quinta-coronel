@@ -1,6 +1,13 @@
 import {useEffect, useState} from "react";
 import Layout from "@/components/Layout";
-import {Heart, Shield, Users} from "lucide-react";
+import {
+  Flame,
+  GraduationCap,
+  HandHeart,
+  HardHat,
+  UsersRound,
+  Wrench,
+} from "lucide-react";
 import escudos from "@/assets/escudos-traslapados.png";
 import {sanityClient, urlFor} from "../lib/sanity";
 
@@ -102,14 +109,29 @@ const HazteSocio = () => {
 
   const getIcon = (tipo?: string) => {
     if (tipo === "capacitacion") {
-      return Users;
+      return {
+        Icon: GraduationCap,
+        Detail: Flame,
+        gradient: "from-secondary/20 via-secondary/10 to-gold/20",
+        accent: "bg-secondary text-secondary-foreground",
+      };
     }
 
     if (tipo === "comunidad") {
-      return Heart;
+      return {
+        Icon: HandHeart,
+        Detail: UsersRound,
+        gradient: "from-primary/20 via-primary/10 to-gold/20",
+        accent: "bg-primary text-primary-foreground",
+      };
     }
 
-    return Shield;
+    return {
+      Icon: HardHat,
+      Detail: Wrench,
+      gradient: "from-gold/30 via-gold/10 to-secondary/15",
+      accent: "bg-gold text-gold-foreground",
+    };
   };
 
   return (
@@ -228,7 +250,7 @@ const HazteSocio = () => {
 
               {beneficios.map((item, index) => {
 
-                const Icon = getIcon(item.tipo);
+                const {Icon, Detail, gradient, accent} = getIcon(item.tipo);
 
                 return (
                   <div
@@ -236,12 +258,18 @@ const HazteSocio = () => {
                       item._key ||
                       `${item.titulo}-${index}`
                     }
-                    className="bg-card rounded-lg p-8 border border-border text-center"
+                    className="group bg-card rounded-xl p-8 border border-border text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl"
                   >
 
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <div className={`relative w-24 h-24 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-6 ring-1 ring-border/70 transition-transform duration-300 group-hover:scale-105`}>
 
-                      <Icon className="h-7 w-7 text-primary" />
+                      <div className="absolute inset-2 rounded-xl border border-white/60" aria-hidden="true" />
+
+                      <Icon className="h-11 w-11 text-foreground" strokeWidth={1.7} aria-hidden="true" />
+
+                      <span className={`absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full ${accent} shadow-md ring-4 ring-card`}>
+                        <Detail className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                      </span>
 
                     </div>
 

@@ -128,11 +128,11 @@ const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-navy shadow-lg py-2"
-          : "bg-navy/80 py-4"
+          ? "bg-navy shadow-lg py-3"
+          : "bg-navy/90 py-5"
       }`}
     >
-      <div className="container mx-auto px-4 flex items-center justify-between">
+      <div className="container mx-auto px-4 xl:px-6 flex items-center justify-between">
 
         {/* =====================================================
             LOGO
@@ -146,16 +146,16 @@ const Navbar = () => {
           <img
             src={logoCircular}
             alt="Quinta Compañía de Bomberos de Coronel"
-            className="h-12 w-12 rounded-full object-cover"
+            className="h-14 w-14 rounded-full object-cover ring-2 ring-primary-foreground/10"
           />
 
           <div className="hidden md:block">
 
-            <span className="text-primary-foreground font-extrabold text-sm uppercase tracking-wide leading-tight block">
+            <span className="text-primary-foreground font-extrabold text-base uppercase tracking-wide leading-tight block">
               Quinta Compañía
             </span>
 
-            <span className="text-primary-foreground/70 text-xs font-medium uppercase tracking-wider">
+            <span className="text-primary-foreground/70 text-[13px] font-medium uppercase tracking-wider">
               Bomberos de Coronel
             </span>
 
@@ -170,7 +170,7 @@ const Navbar = () => {
 
           <Link
             to="/asistente"
-            className={`mr-4 inline-flex items-center gap-2 rounded-md border px-4 py-2 text-xs font-extrabold uppercase tracking-wider transition-all ${
+            className={`mr-3 inline-flex items-center gap-2 rounded-md border px-4 py-3 text-[13px] font-extrabold uppercase tracking-wider transition-all ${
               isPathActive("/asistente")
                 ? "border-gold bg-gold text-gold-foreground shadow-[0_0_24px_hsl(var(--gold)/0.22)]"
                 : "border-primary/60 bg-primary/20 text-primary-foreground hover:border-gold/70 hover:bg-primary/35 hover:text-gold"
@@ -211,7 +211,7 @@ const Navbar = () => {
 
                   <Link
                     to={item.path}
-                    className={`nav-link px-4 py-2 rounded-md inline-flex items-center gap-1 ${
+                    className={`nav-link px-3.5 py-3 rounded-md inline-flex items-center gap-1 ${
                       itemActivo
                         ? "text-gold"
                         : "text-primary-foreground hover:text-gold"
@@ -224,7 +224,7 @@ const Navbar = () => {
 
                   <button
                     type="button"
-                    className={`nav-link px-4 py-2 rounded-md inline-flex items-center gap-1 ${
+                    className={`nav-link px-3.5 py-3 rounded-md inline-flex items-center gap-1 ${
                       itemActivo
                         ? "text-gold"
                         : "text-primary-foreground hover:text-gold"
@@ -245,7 +245,7 @@ const Navbar = () => {
                 {item.children &&
                   openDropdown === item.label && (
 
-                    <div className="absolute top-full left-0 mt-0 bg-navy border border-primary-foreground/10 rounded-md shadow-xl min-w-[200px] py-2 z-50">
+                    <div className="absolute top-full left-0 mt-0 bg-navy border border-primary-foreground/10 rounded-md shadow-xl min-w-[230px] py-3 z-50">
 
                       {item.children.map((child) => {
 
@@ -256,7 +256,7 @@ const Navbar = () => {
                           <Link
                             key={child.path}
                             to={child.path}
-                            className={`block px-5 py-2.5 text-sm font-semibold uppercase tracking-wider transition-colors ${
+                            className={`block px-5 py-3 text-[15px] font-semibold uppercase tracking-wider transition-colors ${
                               childActivo
                                 ? "text-gold bg-primary-foreground/5"
                                 : "text-primary-foreground/80 hover:text-gold hover:bg-primary-foreground/5"

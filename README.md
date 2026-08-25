@@ -110,3 +110,6 @@ manual de RCP seleccionado para esta etapa.
 ## Estado actual
 
 El proyecto se encuentra en la etapa 1: construcción y endurecimiento de la biblioteca consultiva documental. Las etapas siguientes se incorporarán de forma modular para evitar rehacer la arquitectura existente.
+# Acceso editorial a Noticias
+
+Las noticias se escriben en el Studio alojado de Sanity; no es necesario ejecutar el CMS en localhost. Desde la página pública de Noticias, el botón **Escribir noticia** abre directamente el listado editorial. Sanity solicita el acceso con Google y solo permite entrar a colaboradores agregados al proyecto.

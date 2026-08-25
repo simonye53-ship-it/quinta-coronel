@@ -5,6 +5,22 @@ export const structure: StructureResolver = (S) =>
     .title('Contenido')
     .items([
       S.listItem()
+        .title('Escribir noticias')
+        .id('noticias')
+        .child(
+          S.documentTypeList('noticia')
+            .title('Noticias')
+            .defaultOrdering([
+              {
+                field: 'fecha',
+                direction: 'desc',
+              },
+            ])
+        ),
+
+      S.divider(),
+
+      S.listItem()
         .title('Inicio')
         .id('inicio')
         .child(
@@ -83,20 +99,6 @@ export const structure: StructureResolver = (S) =>
           S.document()
             .schemaType('hazteSocio')
             .documentId('hazteSocio')
-        ),
-
-      S.listItem()
-        .title('Noticias')
-        .id('noticias')
-        .child(
-          S.documentTypeList('noticia')
-            .title('Noticias')
-            .defaultOrdering([
-              {
-                field: 'fecha',
-                direction: 'desc',
-              },
-            ])
         ),
 
       S.listItem()
