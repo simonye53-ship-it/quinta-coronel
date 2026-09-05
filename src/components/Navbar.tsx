@@ -128,11 +128,13 @@ const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-navy shadow-lg py-3"
-          : "bg-navy/90 py-5"
+          ? "bg-navy shadow-lg py-2"
+          : "bg-navy/90 py-3"
       }`}
     >
-      <div className="container mx-auto px-4 xl:px-6 flex items-center justify-between">
+      <div className="container mx-auto px-4 xl:px-6">
+
+        <div className="flex items-center justify-between">
 
         {/* =====================================================
             LOGO
@@ -166,7 +168,7 @@ const Navbar = () => {
             MENÚ ESCRITORIO
         ===================================================== */}
 
-        <div className="hidden lg:flex items-center">
+        <div className="hidden sm:flex items-center">
 
           <Link
             to="/asistente"
@@ -181,9 +183,33 @@ const Navbar = () => {
             Asistente IA
           </Link>
 
-          <div className="h-7 w-px bg-primary-foreground/15 mr-3" aria-hidden="true" />
+        </div>
 
-          <div className="flex items-center gap-0">
+        <button
+          type="button"
+          className="sm:hidden text-primary-foreground p-2"
+          onClick={() => {
+            setMobileOpen(!mobileOpen);
+          }}
+          aria-label={
+            mobileOpen
+              ? "Cerrar menú"
+              : "Abrir menú"
+          }
+          aria-expanded={mobileOpen}
+        >
+          {mobileOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+
+        </div>
+
+        <div className="hidden sm:flex mt-2 items-center justify-center border-t border-primary-foreground/10 pt-2">
+
+          <div className="flex w-full items-center justify-center gap-0.5">
 
           {menuItems.map((item) => {
 
@@ -211,7 +237,7 @@ const Navbar = () => {
 
                   <Link
                     to={item.path}
-                    className={`nav-link px-3.5 py-3 rounded-md inline-flex items-center gap-1 ${
+                    className={`nav-link px-1.5 md:px-2.5 lg:px-4 py-2 rounded-md inline-flex items-center gap-1 text-[10px] md:text-[12px] lg:text-sm ${
                       itemActivo
                         ? "text-gold"
                         : "text-primary-foreground hover:text-gold"
@@ -224,7 +250,7 @@ const Navbar = () => {
 
                   <button
                     type="button"
-                    className={`nav-link px-3.5 py-3 rounded-md inline-flex items-center gap-1 ${
+                    className={`nav-link px-1.5 md:px-2.5 lg:px-4 py-2 rounded-md inline-flex items-center gap-1 text-[10px] md:text-[12px] lg:text-sm ${
                       itemActivo
                         ? "text-gold"
                         : "text-primary-foreground hover:text-gold"
@@ -279,30 +305,6 @@ const Navbar = () => {
 
         </div>
 
-        {/* =====================================================
-            BOTÓN MENÚ MÓVIL
-        ===================================================== */}
-
-        <button
-          type="button"
-          className="lg:hidden text-primary-foreground p-2"
-          onClick={() => {
-            setMobileOpen(!mobileOpen);
-          }}
-          aria-label={
-            mobileOpen
-              ? "Cerrar menú"
-              : "Abrir menú"
-          }
-          aria-expanded={mobileOpen}
-        >
-          {mobileOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
-        </button>
-
       </div>
 
       {/* =====================================================
@@ -311,7 +313,7 @@ const Navbar = () => {
 
       {mobileOpen && (
 
-        <div className="lg:hidden bg-navy border-t border-primary-foreground/10">
+        <div className="sm:hidden bg-navy border-t border-primary-foreground/10">
 
           <div className="container mx-auto px-4 py-4 space-y-1">
 

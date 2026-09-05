@@ -344,6 +344,15 @@ const Footer = () => {
             "Honor y Sacrificio" · Fundada el 20 de febrero de 1951
           </p>
 
+          <a
+            href="https://quinta-coronel.sanity.studio/structure/noticias"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="mt-5 inline-block text-[10px] uppercase tracking-[0.18em] text-navy-foreground/20 transition-colors hover:text-navy-foreground/55 focus:text-navy-foreground/70"
+          >
+            Acceso interno
+          </a>
+
         </div>
 
       </div>

@@ -1,14 +1,14 @@
 import {useEffect, useState} from "react";
 import Layout from "@/components/Layout";
 import {
-  Flame,
   GraduationCap,
   HandHeart,
   HardHat,
-  UsersRound,
-  Wrench,
 } from "lucide-react";
 import escudos from "@/assets/escudos-traslapados.png";
+import fotoEquipo from "@/assets/socio-equipamiento.jpeg";
+import fotoFormacion from "@/assets/socio-capacitacion.jpeg";
+import fotoComunidad from "@/assets/foto-comunidad.jpg";
 import {sanityClient, urlFor} from "../lib/sanity";
 
 interface Beneficio {
@@ -111,8 +111,8 @@ const HazteSocio = () => {
     if (tipo === "capacitacion") {
       return {
         Icon: GraduationCap,
-        Detail: Flame,
-        gradient: "from-secondary/20 via-secondary/10 to-gold/20",
+        image: fotoFormacion,
+        imageAlt: "Voluntarios participando en una jornada de capacitación",
         accent: "bg-secondary text-secondary-foreground",
       };
     }
@@ -120,16 +120,16 @@ const HazteSocio = () => {
     if (tipo === "comunidad") {
       return {
         Icon: HandHeart,
-        Detail: UsersRound,
-        gradient: "from-primary/20 via-primary/10 to-gold/20",
+        image: fotoComunidad,
+        imageAlt: "Actividad de la Quinta Compañía junto a la comunidad",
         accent: "bg-primary text-primary-foreground",
       };
     }
 
     return {
       Icon: HardHat,
-      Detail: Wrench,
-      gradient: "from-gold/30 via-gold/10 to-secondary/15",
+      image: fotoEquipo,
+      imageAlt: "Equipo técnico de rescate utilizado por Bomberos",
       accent: "bg-gold text-gold-foreground",
     };
   };
@@ -250,7 +250,7 @@ const HazteSocio = () => {
 
               {beneficios.map((item, index) => {
 
-                const {Icon, Detail, gradient, accent} = getIcon(item.tipo);
+                const {Icon, image, imageAlt, accent} = getIcon(item.tipo);
 
                 return (
                   <div
@@ -258,20 +258,26 @@ const HazteSocio = () => {
                       item._key ||
                       `${item.titulo}-${index}`
                     }
-                    className="group bg-card rounded-xl p-8 border border-border text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl"
+                    className="group overflow-hidden bg-card rounded-xl border border-border text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl"
                   >
 
-                    <div className={`relative w-24 h-24 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-6 ring-1 ring-border/70 transition-transform duration-300 group-hover:scale-105`}>
+                    <div className="relative aspect-[16/10] overflow-hidden bg-muted">
 
-                      <div className="absolute inset-2 rounded-xl border border-white/60" aria-hidden="true" />
+                      <img
+                        src={image}
+                        alt={imageAlt}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
 
-                      <Icon className="h-11 w-11 text-foreground" strokeWidth={1.7} aria-hidden="true" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-navy/75 via-transparent to-transparent" aria-hidden="true" />
 
-                      <span className={`absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full ${accent} shadow-md ring-4 ring-card`}>
-                        <Detail className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                      <span className={`absolute bottom-4 left-4 flex h-12 w-12 items-center justify-center rounded-xl ${accent} shadow-lg ring-2 ring-white/25`}>
+                        <Icon className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
                       </span>
 
                     </div>
+
+                    <div className="p-7">
 
                     <h3 className="text-sm md:text-base font-extrabold uppercase text-foreground mb-2">
                       {item.titulo ||
@@ -281,6 +287,8 @@ const HazteSocio = () => {
                     <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
                       {item.descripcion || ""}
                     </p>
+
+                    </div>
 
                   </div>
                 );

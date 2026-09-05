@@ -1,7 +1,6 @@
 import {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
 import Layout from "@/components/Layout";
-import {ExternalLink, PenLine} from "lucide-react";
 
 import fotoEquipo from "@/assets/foto-equipo-rescate.jpg";
 import fotoRescate from "@/assets/foto-rescate-vehicular.jpg";
@@ -9,9 +8,6 @@ import fotoComunidad from "@/assets/foto-comunidad.jpg";
 import fotoFormacion from "@/assets/foto-formacion.jpg";
 
 import {sanityClient, urlFor} from "../lib/sanity";
-
-const EDITOR_NOTICIAS_URL =
-  "https://www.sanity.io/@oonRCqKDY/studio/soego3yvgxk444ae7p5rgv8z/default/structure/noticias";
 
 interface PortableTextSpan {
   _type?: string;
@@ -171,24 +167,8 @@ const Noticias = () => {
               Noticias
             </h1>
 
-            <p className="text-sm sm:text-base md:text-lg text-primary-foreground/70 max-w-2xl leading-relaxed mb-7">
+            <p className="text-sm sm:text-base md:text-lg text-primary-foreground/70 max-w-2xl leading-relaxed">
               Actualidad, actividades y novedades de la Quinta Compañía del Cuerpo de Bomberos de Coronel.
-            </p>
-
-            <a
-              href={EDITOR_NOTICIAS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 rounded-md bg-gold px-5 py-3 text-sm font-extrabold uppercase tracking-wider text-gold-foreground shadow-lg transition-all hover:-translate-y-0.5 hover:brightness-105"
-              aria-label="Abrir el editor de noticias para colaboradores autorizados"
-            >
-              <PenLine className="h-5 w-5" aria-hidden="true" />
-              Escribir noticia
-              <ExternalLink className="h-4 w-4 opacity-70" aria-hidden="true" />
-            </a>
-
-            <p className="mt-3 text-xs text-primary-foreground/55">
-              Acceso con Google para editores autorizados. No requiere iniciar el CMS en el computador.
             </p>
 
           </div>
